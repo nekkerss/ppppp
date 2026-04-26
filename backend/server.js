@@ -38,7 +38,8 @@ app.use("/api/quotes", require("./routes/quoteRoutes"));
 app.use("/api/claims", require("./routes/claimRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
-app.use("/api/notifications", require("./routes/notificationRoutes")); // ✅ FIXED
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/chat", require("./routes/chatRoutes"));
 
 // Static folder
 app.use("/uploads", express.static(__dirname + "/uploads"));

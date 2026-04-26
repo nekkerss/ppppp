@@ -1,10 +1,14 @@
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import API from "../api/axios";
 import Layout from "../components/Layout";
 import { AuthContext } from "../context/AuthContext";
 
+const BACKEND = "http://localhost:5000";
+
 export default function Profile() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, setUser, logout } = useContext(AuthContext);
+  const avatarInputRef = useRef(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -15,6 +19,23 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("avatar", file);
+      const res = await API.post("/users/avatar", fd);
+      setUser(res.data);
+    } catch (error) {
+      alert(error.response?.data?.message || "Erreur lors du téléversement");
+    } finally {
+      setAvatarLoading(false);
+      e.target.value = "";
+    }
+  };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -71,8 +92,23 @@ export default function Profile() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="text-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto text-white text-3xl font-bold mb-4">
-                  {user?.name?.charAt(0) || "U"}
+                <div className="relative w-24 h-24 mx-auto mb-4">
+                  {user?.avatar ? (
+                    <img
+                      src={`${BACKEND}/uploads/${user.avatar.split(/[/\\]/).pop()}`}
+                      alt="avatar"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-blue-100"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                      {user?.name?.charAt(0) || "U"}
+                    </div>
+                  )}
+                  {avatarLoading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
                 <h2 className="text-xl font-bold text-gray-900">{user?.name || "Utilisateur"}</h2>
                 <p className="text-sm text-gray-600 mt-1">{user?.email}</p>
@@ -82,10 +118,20 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
                 <button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                  type="button"
+                  disabled={avatarLoading}
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all disabled:opacity-60"
                 >
-                  Modifier l'avatar
+                  {avatarLoading ? "Téléversement..." : "Modifier l'avatar"}
                 </button>
                 <button
                   onClick={logout}

@@ -1,108 +1,161 @@
-import { useMemo, useState, useContext } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Bot, MessageCircle, Send, X } from "lucide-react";
 import { ChatContext } from "../context/ChatContext";
+import API from "../api/axios";
 
-const responses = {
-  insurance:
-    "Nous proposons des assurances auto, sante et habitation avec des formules adaptables selon votre profil.",
-  claim:
-    "Pour declarer un sinistre, rendez-vous dans l'espace client puis ouvrez la section Reclamations.",
-  contract:
-    "Vos contrats actifs et leurs echeances sont visibles dans votre tableau de bord et la page Contrats.",
-  quotation:
-    "Vous pouvez demander un devis en quelques clics depuis la section Devis ou via les actions rapides."
+const INITIAL_MESSAGE = {
+  role: "bot",
+  text: "Bonjour ! Je suis votre assistant BNA Assurances. Comment puis-je vous aider aujourd'hui ?"
 };
 
 const quickPrompts = [
   "Quels types d'assurance proposez-vous ?",
-  "Comment declarer un sinistre ?",
-  "Ou voir mes contrats ?",
-  "Comment demander un devis ?"
+  "Comment déclarer un sinistre ?",
+  "Comment demander un devis ?",
+  "Où voir mes contrats ?"
 ];
 
-function getResponse(message) {
-  const text = message.toLowerCase();
-  if (text.includes("sinistre") || text.includes("claim")) return responses.claim;
-  if (text.includes("contrat") || text.includes("contract")) return responses.contract;
-  if (text.includes("devis") || text.includes("quotation")) return responses.quotation;
-  if (text.includes("assurance") || text.includes("insurance")) return responses.insurance;
-  return "Je peux vous aider sur les assurances, les sinistres, les contrats et les devis. Posez-moi une question sur ces sujets.";
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2 bg-white border border-slate-200 rounded-xl w-fit">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-2 h-2 rounded-full bg-[#00a67e] animate-bounce"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function ChatbotWidget() {
   const { chatOpen, setChatOpen } = useContext(ChatContext);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([
-    { role: "bot", text: "Bonjour, je suis votre assistant assurance. Comment puis-je vous aider ?" }
-  ]);
+  const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const [isLoading, setIsLoading] = useState(false);
+  const bottomRef = useRef(null);
 
-  const displayedMessages = useMemo(() => messages.slice(-8), [messages]);
+  useEffect(() => {
+    if (chatOpen) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading, chatOpen]);
 
-  const submitMessage = (messageText) => {
+  const submitMessage = async (messageText) => {
     const text = messageText.trim();
-    if (!text) return;
-    setMessages((prev) => [...prev, { role: "user", text }, { role: "bot", text: getResponse(text) }]);
+    if (!text || isLoading) return;
+
+    const updatedMessages = [...messages, { role: "user", text }];
+    setMessages(updatedMessages);
     setInput("");
+    setIsLoading(true);
+
+    try {
+      const res = await API.post("/chat", { messages: updatedMessages });
+      const reply = res.data.reply || "Je suis désolé, une erreur s'est produite.";
+      setMessages((prev) => [...prev, { role: "bot", text: reply }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "bot", text: "Service temporairement indisponible. Veuillez réessayer ou contacter un gestionnaire via la page Messages." }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end">
       {chatOpen && (
-        <div className="mb-3 w-[320px] sm:w-[360px] rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden transition-all duration-300">
+        <div className="mb-3 w-[320px] sm:w-[370px] rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
+
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-[#0f2744] text-white">
             <div className="flex items-center gap-2">
-              <Bot className="w-4 h-4 text-[#00d1a0]" />
-              <p className="font-semibold text-sm">Assistant Assurance</p>
+              <div className="relative">
+                <Bot className="w-5 h-5 text-[#00d1a0]" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#00a67e] border border-[#0f2744]" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm leading-none">Assistant BNA</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {isLoading ? "En train d'écrire..." : "En ligne"}
+                </p>
+              </div>
             </div>
-            <button type="button" onClick={() => setChatOpen(false)} aria-label="Fermer le chatbot">
-              <X className="w-4 h-4" />
+            <button type="button" onClick={() => setChatOpen(false)} aria-label="Fermer">
+              <X className="w-4 h-4 text-slate-400 hover:text-white transition-colors" />
             </button>
           </div>
 
-          <div className="p-4 space-y-3 max-h-80 overflow-y-auto bg-slate-50">
-            {displayedMessages.map((message, index) => (
+          {/* Messages */}
+          <div className="p-4 space-y-3 h-72 overflow-y-auto bg-slate-50">
+            {messages.map((message, index) => (
               <div
-                key={`${message.role}-${index}`}
-                className={`rounded-xl px-3 py-2 text-sm ${
-                  message.role === "bot"
-                    ? "bg-white border border-slate-200 text-slate-700"
-                    : "bg-[#00a67e] text-white ml-8"
-                }`}
+                key={index}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {message.text}
+                {message.role === "bot" && (
+                  <div className="w-6 h-6 rounded-full bg-[#0f2744] flex items-center justify-center mr-2 mt-1 shrink-0">
+                    <Bot className="w-3 h-3 text-[#00d1a0]" />
+                  </div>
+                )}
+                <div
+                  className={`rounded-2xl px-3 py-2 text-sm max-w-[80%] leading-relaxed ${
+                    message.role === "bot"
+                      ? "bg-white border border-slate-200 text-slate-700 rounded-tl-sm"
+                      : "bg-[#00a67e] text-white rounded-tr-sm"
+                  }`}
+                >
+                  {message.text}
+                </div>
               </div>
             ))}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="w-6 h-6 rounded-full bg-[#0f2744] flex items-center justify-center mr-2 mt-1 shrink-0">
+                  <Bot className="w-3 h-3 text-[#00d1a0]" />
+                </div>
+                <TypingIndicator />
+              </div>
+            )}
+
+            <div ref={bottomRef} />
           </div>
 
-          <div className="px-4 pb-3 pt-2 border-t border-slate-200">
-            <div className="flex flex-wrap gap-2 mb-3">
+          {/* Quick prompts + Input */}
+          <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-white space-y-3">
+            <div className="flex flex-wrap gap-1.5">
               {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
+                  disabled={isLoading}
                   onClick={() => submitMessage(prompt)}
-                  className="text-xs rounded-full border border-slate-300 px-3 py-1 hover:border-[#00a67e] hover:text-[#008c6a] transition-colors"
+                  className="text-xs rounded-full border border-slate-200 px-3 py-1 hover:border-[#00a67e] hover:text-[#008c6a] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {prompt}
                 </button>
               ))}
             </div>
+
             <form
               className="flex items-center gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                submitMessage(input);
-              }}
+              onSubmit={(e) => { e.preventDefault(); submitMessage(input); }}
             >
               <input
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Ecrire votre question..."
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00a67e]/40"
+                onChange={(e) => setInput(e.target.value)}
+                disabled={isLoading}
+                placeholder="Écrire votre question..."
+                className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#00a67e]/40 disabled:bg-slate-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"
-                className="rounded-xl bg-[#00a67e] hover:bg-[#008c6a] text-white p-2 transition-colors"
+                disabled={isLoading || !input.trim()}
+                className="rounded-xl bg-[#00a67e] hover:bg-[#008c6a] text-white p-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 aria-label="Envoyer"
               >
                 <Send className="w-4 h-4" />
@@ -112,6 +165,7 @@ export default function ChatbotWidget() {
         </div>
       )}
 
+      {/* Toggle button */}
       <button
         type="button"
         onClick={() => setChatOpen((prev) => !prev)}

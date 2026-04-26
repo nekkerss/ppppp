@@ -4,7 +4,8 @@ const QuoteSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: String, required: true },
     prix: { type: Number, required: true },
-    parametres: { type: Object }, // âge, voiture, etc.
+    parametres: { type: Object },
+    explication: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 

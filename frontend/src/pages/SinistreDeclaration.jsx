@@ -50,19 +50,47 @@ export default function SinistreDeclaration() {
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [voyageSubType, setVoyageSubType] = useState("");
+  const [santeSubType, setSanteSubType] = useState("");
+  const [batimentSubType, setBatimentSubType] = useState("");
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
     cinNumber: user?.CIN || "",
     email: user?.email || "",
     gsm: user?.phone || "",
     immatriculation: "",
+    numeroPoliceBatiment: "",
     contractId: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
     files: {
       attestationTiers: null,
       constat: null,
-      photoVehicule: null
+      photoVehicule: null,
+      cinPasseport: null,
+      policeAssurance: null,
+      billetsAvion: null,
+      preuveReservation: null,
+      feuilleSoins: null,
+      rapportMedical: null,
+      facturesOriginales: null,
+      facturesPharmacie: null,
+      resultatsAnalyses: null,
+      prescription: null,
+      bulletinHospitalisation: null,
+      factureClinic: null,
+      compteRenduHospitalisation: null,
+      carteIdentiteBatiment: null,
+      contratAssuranceHabitation: null,
+      declarationEcriteBatiment: null,
+      photosDegats: null,
+      listeBiensDommages: null,
+      constatAmiableEaux: null,
+      coordonneesImpliques: null,
+      rapportProtectionCivile: null,
+      preuveIntervention: null,
+      rapportExpert: null,
+      titrePropriete: null
     }
   });
 
@@ -102,6 +130,18 @@ export default function SinistreDeclaration() {
       alert("Veuillez joindre une copie du constat.");
       return;
     }
+    if (selectedType === "voyage" && !voyageSubType) {
+      alert("Veuillez choisir un type de sinistre voyage.");
+      return;
+    }
+    if (selectedType === "sante" && !santeSubType) {
+      alert("Veuillez choisir un type de sinistre santé.");
+      return;
+    }
+    if (selectedType === "batiment" && !batimentSubType) {
+      alert("Veuillez choisir un type de sinistre bâtiment.");
+      return;
+    }
     
     setSubmitting(true);
     try {
@@ -113,11 +153,21 @@ export default function SinistreDeclaration() {
       if (formData.immatriculation) {
         formDataToSend.append("immatriculation", formData.immatriculation);
       }
+      if (selectedType === "voyage" && voyageSubType) {
+        formDataToSend.append("voyageSubType", voyageSubType);
+      }
+      if (selectedType === "sante" && santeSubType) {
+        formDataToSend.append("santeSubType", santeSubType);
+      }
+      if (selectedType === "batiment") {
+        if (batimentSubType) formDataToSend.append("batimentSubType", batimentSubType);
+        if (formData.numeroPoliceBatiment) formDataToSend.append("numeroPoliceBatiment", formData.numeroPoliceBatiment);
+      }
       formDataToSend.append("contractId", formData.contractId);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("date", formData.date);
       formDataToSend.append("sinistreType", selectedType);
-      
+
       if (formData.files.attestationTiers) {
         formDataToSend.append("attestationTiers", formData.files.attestationTiers);
       }
@@ -127,6 +177,53 @@ export default function SinistreDeclaration() {
       if (formData.files.photoVehicule) {
         formDataToSend.append("photoVehicule", formData.files.photoVehicule);
       }
+      if (formData.files.cinPasseport) {
+        formDataToSend.append("cinPasseport", formData.files.cinPasseport);
+      }
+      if (formData.files.policeAssurance) {
+        formDataToSend.append("policeAssurance", formData.files.policeAssurance);
+      }
+      if (formData.files.billetsAvion) {
+        formDataToSend.append("billetsAvion", formData.files.billetsAvion);
+      }
+      if (formData.files.preuveReservation) {
+        formDataToSend.append("preuveReservation", formData.files.preuveReservation);
+      }
+      if (formData.files.feuilleSoins) {
+        formDataToSend.append("feuilleSoins", formData.files.feuilleSoins);
+      }
+      if (formData.files.rapportMedical) {
+        formDataToSend.append("rapportMedical", formData.files.rapportMedical);
+      }
+      if (formData.files.facturesOriginales) {
+        formDataToSend.append("facturesOriginales", formData.files.facturesOriginales);
+      }
+      if (formData.files.facturesPharmacie) {
+        formDataToSend.append("facturesPharmacie", formData.files.facturesPharmacie);
+      }
+      if (formData.files.resultatsAnalyses) {
+        formDataToSend.append("resultatsAnalyses", formData.files.resultatsAnalyses);
+      }
+      if (formData.files.prescription) {
+        formDataToSend.append("prescription", formData.files.prescription);
+      }
+      if (formData.files.bulletinHospitalisation) {
+        formDataToSend.append("bulletinHospitalisation", formData.files.bulletinHospitalisation);
+      }
+      if (formData.files.factureClinic) {
+        formDataToSend.append("factureClinic", formData.files.factureClinic);
+      }
+      if (formData.files.compteRenduHospitalisation) {
+        formDataToSend.append("compteRenduHospitalisation", formData.files.compteRenduHospitalisation);
+      }
+      const BATIMENT_KEYS = [
+        "carteIdentiteBatiment","contratAssuranceHabitation","declarationEcriteBatiment",
+        "photosDegats","listeBiensDommages","constatAmiableEaux","coordonneesImpliques",
+        "rapportProtectionCivile","preuveIntervention","rapportExpert","titrePropriete"
+      ];
+      BATIMENT_KEYS.forEach((k) => {
+        if (formData.files[k]) formDataToSend.append(k, formData.files[k]);
+      });
       
       const res = await API.post("/claims", formDataToSend);
       const createdClaim = res.data;
@@ -147,9 +244,16 @@ export default function SinistreDeclaration() {
         files: {
           attestationTiers: null,
           constat: null,
-          photoVehicule: null
+          photoVehicule: null,
+          cinPasseport: null,
+          policeAssurance: null,
+          billetsAvion: null,
+          preuveReservation: null
         }
       });
+      setVoyageSubType("");
+      setSanteSubType("");
+      setBatimentSubType("");
       setSelectedType(null);
     } catch (err) {
       alert(err.response?.data?.message || "Erreur lors de l'envoi de la déclaration.");
@@ -384,6 +488,343 @@ export default function SinistreDeclaration() {
                   className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
                 />
               </div>
+
+              {/* Voyage-specific fields */}
+              {selectedType === "voyage" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Type de sinistre voyage *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { id: "medical_etranger", label: "Médical à l'étranger" },
+                        { id: "retard_annulation_vol", label: "Retard ou annulation de vol" },
+                        { id: "perte_vol_bagages", label: "Perte ou vol de bagages" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setVoyageSubType(opt.id)}
+                          className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                            voyageSubType === opt.id
+                              ? "border-[#00a67e] bg-sky-50 text-[#00a67e]"
+                              : "border-slate-200 text-slate-700 hover:border-slate-300"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">Copie CIN ou passeport *</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setFormData({ ...formData, files: { ...formData.files, cinPasseport: e.target.files?.[0] || null } })}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                      />
+                      {formData.files.cinPasseport && (
+                        <p className="text-sm text-green-600 mt-1">✓ {formData.files.cinPasseport.name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">Copie police d&apos;assurance voyage *</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setFormData({ ...formData, files: { ...formData.files, policeAssurance: e.target.files?.[0] || null } })}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                      />
+                      {formData.files.policeAssurance && (
+                        <p className="text-sm text-green-600 mt-1">✓ {formData.files.policeAssurance.name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">Billets d&apos;avion + carte d&apos;embarquement *</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setFormData({ ...formData, files: { ...formData.files, billetsAvion: e.target.files?.[0] || null } })}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                      />
+                      {formData.files.billetsAvion && (
+                        <p className="text-sm text-green-600 mt-1">✓ {formData.files.billetsAvion.name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">Preuve de réservation (hôtel, agence…) (optionnel)</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setFormData({ ...formData, files: { ...formData.files, preuveReservation: e.target.files?.[0] || null } })}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                      />
+                      {formData.files.preuveReservation && (
+                        <p className="text-sm text-green-600 mt-1">✓ {formData.files.preuveReservation.name}</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Santé-specific fields */}
+              {selectedType === "sante" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Type de sinistre santé *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { id: "medicaments_examens", label: "Médicaments / Examens" },
+                        { id: "hospitalisation", label: "Hospitalisation" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSanteSubType(opt.id)}
+                          className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                            santeSubType === opt.id
+                              ? "border-[#00a67e] bg-rose-50 text-[#00a67e]"
+                              : "border-slate-200 text-slate-700 hover:border-slate-300"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Base documents — always shown */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { key: "feuilleSoins", label: "Feuille de soins *" },
+                      { key: "rapportMedical", label: "Rapport / certificat médical *" },
+                      { key: "facturesOriginales", label: "Factures originales *" }
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                        />
+                        {formData.files[f.key] && (
+                          <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Médicaments / Examens documents */}
+                  {santeSubType === "medicaments_examens" && (
+                    <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4 space-y-4">
+                      <p className="text-sm font-semibold text-rose-700">Documents complémentaires — Médicaments / Examens</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          { key: "facturesPharmacie", label: "Factures de pharmacie" },
+                          { key: "resultatsAnalyses", label: "Résultats d'analyses / radios / scanner" },
+                          { key: "prescription", label: "Prescription correspondante" }
+                        ].map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                            />
+                            {formData.files[f.key] && (
+                              <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hospitalisation documents */}
+                  {santeSubType === "hospitalisation" && (
+                    <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4 space-y-4">
+                      <p className="text-sm font-semibold text-rose-700">Documents complémentaires — Hospitalisation</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          { key: "bulletinHospitalisation", label: "Bulletin d'hospitalisation" },
+                          { key: "factureClinic", label: "Facture de la clinique / hôpital" },
+                          { key: "compteRenduHospitalisation", label: "Compte rendu d'hospitalisation" }
+                        ].map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                            />
+                            {formData.files[f.key] && (
+                              <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Bâtiment-specific fields */}
+              {selectedType === "batiment" && (
+                <>
+                  {/* Subtype selector */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Type de sinistre bâtiment *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { id: "degats_eaux",  label: "Dégâts des eaux" },
+                        { id: "incendie",     label: "Incendie" },
+                        { id: "gros_sinistre",label: "Gros sinistre" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setBatimentSubType(opt.id)}
+                          className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                            batimentSubType === opt.id
+                              ? "border-[#00a67e] bg-emerald-50 text-[#00a67e]"
+                              : "border-slate-200 text-slate-700 hover:border-slate-300"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Numéro de police (text) */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-800 mb-2">Numéro de police d&apos;assurance</label>
+                    <input
+                      type="text"
+                      placeholder="Ex : POL-2024-XXXXXX"
+                      value={formData.numeroPoliceBatiment}
+                      onChange={(e) => setFormData({ ...formData, numeroPoliceBatiment: e.target.value })}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                    />
+                  </div>
+
+                  {/* Base documents */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { key: "carteIdentiteBatiment",      label: "Copie de la carte d'identité *" },
+                      { key: "contratAssuranceHabitation", label: "Copie du contrat d'assurance habitation *" },
+                      { key: "declarationEcriteBatiment",  label: "Déclaration écrite du sinistre *" }
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                        />
+                        {formData.files[f.key] && <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Documents liés au sinistre */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { key: "photosDegats",       label: "Photos des dégâts *" },
+                      { key: "listeBiensDommages", label: "Liste des biens endommagés" }
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                          className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                        />
+                        {formData.files[f.key] && <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Dégâts des eaux */}
+                  {batimentSubType === "degats_eaux" && (
+                    <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4 space-y-4">
+                      <p className="text-sm font-semibold text-emerald-700">Documents — Dégâts des eaux</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { key: "constatAmiableEaux",   label: "Constat amiable dégâts des eaux" },
+                          { key: "coordonneesImpliques", label: "Coordonnées des personnes impliquées" }
+                        ].map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                            />
+                            {formData.files[f.key] && <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Incendie */}
+                  {batimentSubType === "incendie" && (
+                    <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4 space-y-4">
+                      <p className="text-sm font-semibold text-emerald-700">Documents — Incendie</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { key: "rapportProtectionCivile", label: "Rapport de la protection civile / police" },
+                          { key: "preuveIntervention",      label: "Preuve de l'intervention (si disponible)" }
+                        ].map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                            />
+                            {formData.files[f.key] && <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gros sinistre */}
+                  {batimentSubType === "gros_sinistre" && (
+                    <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4 space-y-4">
+                      <p className="text-sm font-semibold text-emerald-700">Documents — Gros sinistre</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          { key: "rapportExpert",  label: "Rapport d'expert" },
+                          { key: "titrePropriete", label: "Titre de propriété ou contrat de location" }
+                        ].map((f) => (
+                          <div key={f.key}>
+                            <label className="block text-sm font-semibold text-slate-800 mb-2">{f.label}</label>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setFormData({ ...formData, files: { ...formData.files, [f.key]: e.target.files?.[0] || null } })}
+                              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
+                            />
+                            {formData.files[f.key] && <p className="text-sm text-green-600 mt-1">✓ {formData.files[f.key].name}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* File uploads for Auto */}
               {selectedType === "auto" && (

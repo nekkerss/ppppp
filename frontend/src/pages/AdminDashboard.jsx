@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import Layout from "../components/Layout";
 import API from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 
-const ROLE_OPTIONS = ["user", "admin", "gestionnaire"];
+const ROLE_OPTIONS = ["user", "gestionnaire"];
 
-export default function AdminDashboard({
-  title = "Admin Dashboard",
-  subtitle = "Manage users, roles, and verification status"
-}) {
+export default function AdminDashboard() {
+  const { user: currentUser } = useContext(AuthContext);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("users");
 
   const fetchAccounts = async () => {
     try {
@@ -42,29 +42,30 @@ export default function AdminDashboard({
   }, []);
 
   const filteredAccounts = useMemo(() => {
+    const roleFilter = activeTab === "users" ? "user" : "gestionnaire";
     const term = search.trim().toLowerCase();
-    if (!term) return accounts;
-    return accounts.filter((account) =>
-      [account.name, account.email, account.CIN]
-        .filter(Boolean)
-        .some((v) => v.toLowerCase().includes(term))
-    );
-  }, [accounts, search]);
+    return accounts
+      .filter((a) => a.role === roleFilter)
+      .filter((a) =>
+        !term ||
+        [a.name, a.email, a.CIN]
+          .filter(Boolean)
+          .some((v) => v.toLowerCase().includes(term))
+      );
+  }, [accounts, search, activeTab]);
 
   const handleToggleVerification = async (account) => {
     try {
       setError("");
       setSuccess("");
       const res = await API.patch(`/users/admin/accounts/${account._id}`, {
-        emailVerified: !account.emailVerified
+        emailVerified: !account.emailVerified,
       });
-      setSuccess("Account verification status updated");
+      setSuccess("Statut de vérification mis à jour");
       setAccounts((prev) => prev.map((u) => (u._id === account._id ? res.data : u)));
-      if (selectedAccount?._id === account._id) {
-        setSelectedAccount(res.data);
-      }
+      if (selectedAccount?._id === account._id) setSelectedAccount(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to update verification status");
+      setError(err.response?.data?.message || "Échec de la mise à jour");
     }
   };
 
@@ -73,72 +74,110 @@ export default function AdminDashboard({
       setError("");
       setSuccess("");
       const res = await API.patch(`/users/admin/accounts/${account._id}`, { role: nextRole });
-      setSuccess("Account role updated");
+      setSuccess("Rôle mis à jour");
       setAccounts((prev) => prev.map((u) => (u._id === account._id ? res.data : u)));
-      if (selectedAccount?._id === account._id) {
-        setSelectedAccount(res.data);
-      }
+      if (selectedAccount?._id === account._id) setSelectedAccount(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to update role");
+      setError(err.response?.data?.message || "Échec de la mise à jour du rôle");
     }
   };
 
   const handleDelete = async (account) => {
-    if (!window.confirm(`Delete account ${account.email}?`)) return;
-
+    if (!window.confirm(`Supprimer le compte ${account.email} ?`)) return;
     try {
       setError("");
       setSuccess("");
       await API.delete(`/users/admin/accounts/${account._id}`);
-      setSuccess("Account deleted successfully");
+      setSuccess("Compte supprimé");
       setAccounts((prev) => prev.filter((u) => u._id !== account._id));
-      if (selectedAccount?._id === account._id) {
-        setSelectedAccount(null);
-      }
+      if (selectedAccount?._id === account._id) setSelectedAccount(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete account");
+      setError(err.response?.data?.message || "Échec de la suppression");
     }
   };
+
+  const userCount = accounts.filter((a) => a.role === "user").length;
+  const gestionnaireCount = accounts.filter((a) => a.role === "gestionnaire").length;
 
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
+        {/* Header */}
         <div className="bg-gradient-to-r from-[#1a365d] to-[#2d4a7c] px-6 py-8 md:px-10">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl md:text-4xl font-bold text-white">{title}</h1>
-            <p className="text-blue-100 mt-2">{subtitle}</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-white">Admin Dashboard</h1>
+            <p className="text-blue-100 mt-2">Gestion des comptes — utilisateurs et gestionnaires</p>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-8 space-y-6">
-          {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">{error}</div>}
-          {success && <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700">{success}</div>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700">{error}</div>
+          )}
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-green-700">{success}</div>
+          )}
 
+          {/* Search */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, CIN..."
+              placeholder="Rechercher par nom, email, CIN..."
               className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#00a67e]"
             />
           </div>
 
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-gray-200">
+            <button
+              onClick={() => { setActiveTab("users"); setSelectedAccount(null); }}
+              className={`px-6 py-3 text-sm font-semibold rounded-t-lg border border-b-0 transition-colors ${
+                activeTab === "users"
+                  ? "bg-white border-gray-200 text-[#1a365d]"
+                  : "bg-transparent border-transparent text-gray-500 hover:text-[#1a365d]"
+              }`}
+            >
+              Utilisateurs
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                {userCount}
+              </span>
+            </button>
+            <button
+              onClick={() => { setActiveTab("gestionnaires"); setSelectedAccount(null); }}
+              className={`px-6 py-3 text-sm font-semibold rounded-t-lg border border-b-0 transition-colors ${
+                activeTab === "gestionnaires"
+                  ? "bg-white border-gray-200 text-[#1a365d]"
+                  : "bg-transparent border-transparent text-gray-500 hover:text-[#1a365d]"
+              }`}
+            >
+              Gestionnaires
+              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-700">
+                {gestionnaireCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Account list */}
             <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="font-semibold text-[#1a365d]">Accounts</h2>
+                <h2 className="font-semibold text-[#1a365d]">
+                  {activeTab === "users" ? "Liste des utilisateurs" : "Liste des gestionnaires"}
+                </h2>
                 <button
                   onClick={fetchAccounts}
                   className="text-sm bg-[#1a365d] text-white px-3 py-1.5 rounded-lg hover:bg-[#163050]"
                 >
-                  Refresh
+                  Actualiser
                 </button>
               </div>
 
               {loading ? (
-                <div className="p-6 text-gray-500">Loading accounts...</div>
+                <div className="p-6 text-gray-500">Chargement...</div>
               ) : filteredAccounts.length === 0 ? (
-                <div className="p-6 text-gray-500">No accounts found.</div>
+                <div className="p-6 text-gray-500">Aucun compte trouvé.</div>
               ) : (
                 <div className="divide-y divide-gray-100">
                   {filteredAccounts.map((account) => (
@@ -147,13 +186,23 @@ export default function AdminDashboard({
                         <p className="font-semibold text-[#1a365d]">{account.name}</p>
                         <p className="text-sm text-gray-600">{account.email}</p>
                         <div className="mt-2 flex items-center gap-2 text-xs">
-                          <span className="px-2 py-1 rounded bg-gray-100 text-gray-700">Role: {account.role}</span>
                           <span
-                            className={`px-2 py-1 rounded ${
-                              account.emailVerified ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                            className={`px-2 py-1 rounded font-medium ${
+                              account.role === "gestionnaire"
+                                ? "bg-purple-100 text-purple-700"
+                                : "bg-blue-100 text-blue-700"
                             }`}
                           >
-                            {account.emailVerified ? "Verified" : "Not verified"}
+                            {account.role}
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded ${
+                              account.emailVerified
+                                ? "bg-green-100 text-green-700"
+                                : "bg-amber-100 text-amber-700"
+                            }`}
+                          >
+                            {account.emailVerified ? "Vérifié" : "Non vérifié"}
                           </span>
                         </div>
                       </div>
@@ -162,31 +211,39 @@ export default function AdminDashboard({
                           onClick={() => fetchAccountDetails(account._id)}
                           className="text-xs px-3 py-1.5 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
                         >
-                          Details
+                          Détails
                         </button>
-                        <button
-                          onClick={() => handleToggleVerification(account)}
-                          className="text-xs px-3 py-1.5 rounded bg-amber-100 text-amber-700 hover:bg-amber-200"
-                        >
-                          Toggle Verify
-                        </button>
-                        <select
-                          value={account.role}
-                          onChange={(e) => handleRoleChange(account, e.target.value)}
-                          className="text-xs px-3 py-1.5 rounded bg-purple-100 text-purple-700 border border-purple-200"
-                        >
-                          {ROLE_OPTIONS.map((role) => (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => handleDelete(account)}
-                          className="text-xs px-3 py-1.5 rounded bg-red-100 text-red-700 hover:bg-red-200"
-                        >
-                          Delete
-                        </button>
+                        {currentUser?.role === "gestionnaire" && account.role === "gestionnaire" ? (
+                          <span className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-400 border border-gray-200 select-none">
+                            Lecture seule
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleToggleVerification(account)}
+                              className="text-xs px-3 py-1.5 rounded bg-amber-100 text-amber-700 hover:bg-amber-200"
+                            >
+                              Vérification
+                            </button>
+                            <select
+                              value={account.role}
+                              onChange={(e) => handleRoleChange(account, e.target.value)}
+                              className="text-xs px-3 py-1.5 rounded bg-purple-100 text-purple-700 border border-purple-200"
+                            >
+                              {ROLE_OPTIONS.map((role) => (
+                                <option key={role} value={role}>
+                                  {role}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => handleDelete(account)}
+                              className="text-xs px-3 py-1.5 rounded bg-red-100 text-red-700 hover:bg-red-200"
+                            >
+                              Supprimer
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -194,19 +251,34 @@ export default function AdminDashboard({
               )}
             </div>
 
+            {/* Account details panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-              <h2 className="font-semibold text-[#1a365d] mb-3">Account details</h2>
+              <h2 className="font-semibold text-[#1a365d] mb-3">Détails du compte</h2>
               {!selectedAccount ? (
-                <p className="text-sm text-gray-500">Select an account to inspect details.</p>
+                <p className="text-sm text-gray-500">Sélectionnez un compte pour voir les détails.</p>
               ) : (
                 <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Name:</span> {selectedAccount.name}</p>
-                  <p><span className="font-medium">Email:</span> {selectedAccount.email}</p>
-                  <p><span className="font-medium">CIN:</span> {selectedAccount.CIN || "-"}</p>
-                  <p><span className="font-medium">Phone:</span> {selectedAccount.phone || "-"}</p>
-                  <p><span className="font-medium">Role:</span> {selectedAccount.role}</p>
-                  <p><span className="font-medium">Verified:</span> {selectedAccount.emailVerified ? "Yes" : "No"}</p>
-                  <p><span className="font-medium">Created:</span> {selectedAccount.createdAt ? new Date(selectedAccount.createdAt).toLocaleString() : "-"}</p>
+                  <p><span className="font-medium">Nom :</span> {selectedAccount.name}</p>
+                  <p><span className="font-medium">Email :</span> {selectedAccount.email}</p>
+                  <p><span className="font-medium">CIN :</span> {selectedAccount.CIN || "-"}</p>
+                  <p><span className="font-medium">Téléphone :</span> {selectedAccount.phone || "-"}</p>
+                  <p><span className="font-medium">Rôle :</span> {selectedAccount.role}</p>
+                  <p>
+                    <span className="font-medium">Vérifié :</span>{" "}
+                    {selectedAccount.emailVerified ? "Oui" : "Non"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Créé le :</span>{" "}
+                    {selectedAccount.createdAt
+                      ? new Date(selectedAccount.createdAt).toLocaleString("fr-FR")
+                      : "-"}
+                  </p>
+                  <button
+                    onClick={() => setSelectedAccount(null)}
+                    className="mt-3 text-xs text-gray-400 hover:text-gray-600 underline"
+                  >
+                    Fermer
+                  </button>
                 </div>
               )}
             </div>

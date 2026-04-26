@@ -19,6 +19,8 @@ import Messages from "./pages/Messages";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import GestionnaireDashboard from "./pages/GestionnaireDashboard";
+import GestionnaireContracts from "./pages/GestionnaireContracts";
+import GestionnaireSinistres from "./pages/GestionnaireSinistres";
 import UserDossiers from "./pages/UserDossiers";
 import ServiceDetails from "./pages/ServiceDetails";
 import About from "./pages/About";
@@ -84,6 +86,8 @@ function AppRoutes() {
       <Route path="/admin/dashboard" element={<StaffRoute><AdminDashboard /></StaffRoute>} />
       <Route path="/gestionnaire/dashboard" element={<StaffRoute><GestionnaireDashboard /></StaffRoute>} />
       <Route path="/gestionnaire/dossiers" element={<StaffRoute><UserDossiers /></StaffRoute>} />
+      <Route path="/gestionnaire/contracts" element={<StaffRoute><GestionnaireContracts /></StaffRoute>} />
+      <Route path="/gestionnaire/sinistres" element={<StaffRoute><GestionnaireSinistres /></StaffRoute>} />
       <Route path="/admin" element={<StaffRoute><Navigate to="/admin/dashboard" replace /></StaffRoute>} />
 
       <Route path="*" element={<Navigate to={user ? defaultAuthenticatedRoute : "/login"} replace />} />

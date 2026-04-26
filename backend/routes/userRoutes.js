@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getProfile,
   updateProfile,
+  uploadAvatar,
   getAllAccounts,
   getAccountById,
   updateAccountByAdmin,
@@ -11,9 +12,11 @@ const {
 } = require("../controllers/userController");
 const auth = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 router.get("/profile", auth, getProfile);
 router.put("/profile", auth, updateProfile);
+router.post("/avatar", auth, upload.single("avatar"), uploadAvatar);
 router.get("/message-recipients", auth, getMessageRecipients);
 router.get("/admin/accounts", auth, admin, getAllAccounts);
 router.get("/admin/accounts/:id", auth, admin, getAccountById);

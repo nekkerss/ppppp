@@ -1,13 +1,14 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { ChatContext } from "../context/ChatContext";
+import API from "../api/axios";
 import {
-  LayoutDashboard, 
-  FileText, 
-  AlertTriangle, 
-  Calculator, 
-  FolderOpen, 
+  LayoutDashboard,
+  FileText,
+  AlertTriangle,
+  Calculator,
+  FolderOpen,
   MessageSquare,
   Settings,
   LogOut,
@@ -17,7 +18,8 @@ import {
   Headphones,
   HelpCircle,
   ClipboardList,
-  Users
+  Users,
+  Bell
 } from "lucide-react";
 
 export default function Layout({ children }) {
@@ -27,6 +29,52 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loginBanner, setLoginBanner] = useState(false);
+  const loginBannerShown = useRef(false);
+
+  const fetchUnread = useCallback(async () => {
+    try {
+      const res = await API.get("/messages/unread-count");
+      const count = res.data?.count || 0;
+      setUnreadCount(count);
+      return count;
+    } catch (_) {
+      return 0;
+    }
+  }, []);
+
+  // On login: fetch unread once, show banner if > 0
+  useEffect(() => {
+    if (!user) {
+      loginBannerShown.current = false;
+      return;
+    }
+    if (loginBannerShown.current) return;
+    loginBannerShown.current = true;
+
+    fetchUnread().then((count) => {
+      if (count > 0) {
+        setLoginBanner(true);
+        setTimeout(() => setLoginBanner(false), 6000);
+      }
+    });
+  }, [user, fetchUnread]);
+
+  // Poll unread count every 20s
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(fetchUnread, 20000);
+    return () => clearInterval(id);
+  }, [user, fetchUnread]);
+
+  // Clear badge when navigating to messages
+  useEffect(() => {
+    if (location.pathname === "/messages") {
+      setUnreadCount(0);
+      setLoginBanner(false);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -45,14 +93,10 @@ export default function Layout({ children }) {
     : user?.role === "gestionnaire"
       ? [
           { path: "/gestionnaire/dashboard", label: "Gestionnaire", icon: LayoutDashboard },
-          { path: "/gestionnaire/dossiers", label: "Dossiers users", icon: Users },
-          { path: "/contracts", label: "Contrats", icon: FileText },
-          { path: "/claims", label: "Reclamations", icon: AlertTriangle },
-          { path: "/mon-sinistre", label: "Mon sinistre", icon: AlertTriangle },
-          { path: "/quotes", label: "Devis", icon: Calculator },
-          { path: "/documents", label: "Documents", icon: FolderOpen },
-          { path: "/messages", label: "Messages", icon: MessageSquare },
-          { path: "/admin/dashboard", label: "Users", icon: Users }
+          { path: "/gestionnaire/dossiers", label: "Dossiers clients", icon: Users },
+          { path: "/gestionnaire/contracts", label: "Contrats clients", icon: ClipboardList },
+          { path: "/gestionnaire/sinistres", label: "Sinistres clients", icon: AlertTriangle },
+          { path: "/messages", label: "Messages", icon: MessageSquare, badge: true }
         ]
       : [
         { path: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
@@ -62,13 +106,44 @@ export default function Layout({ children }) {
         { path: "/mon-sinistre", label: "Mon sinistre", icon: AlertTriangle },
         { path: "/quotes", label: "Devis", icon: Calculator },
         { path: "/documents", label: "Documents", icon: FolderOpen },
-        { path: "/messages", label: "Messages", icon: MessageSquare }
+        { path: "/messages", label: "Messages", icon: MessageSquare, badge: true }
       ];
 
   const isActive = (path) => location.pathname === path;
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Login unread notification banner */}
+      {loginBanner && (
+        <div
+          className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-[#0f2744] text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-[#00a67e]/30 cursor-pointer"
+          style={{ animation: "slideInRight 0.4s cubic-bezier(0.22,1,0.36,1)" }}
+          onClick={() => { setLoginBanner(false); navigate("/messages"); }}
+        >
+          <style>{`
+            @keyframes slideInRight {
+              from { opacity: 0; transform: translateX(60px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+          <div className="w-9 h-9 rounded-xl bg-[#00a67e]/20 flex items-center justify-center shrink-0">
+            <Bell className="w-4 h-4 text-[#00a67e]" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">Nouveaux messages</p>
+            <p className="text-xs text-blue-200/70">
+              Vous avez {unreadCount} message{unreadCount > 1 ? "s" : ""} non lu{unreadCount > 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLoginBanner(false); }}
+            className="ml-2 text-blue-200/50 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div className="flex">
         {/* Sidebar */}
         <aside className={`
@@ -113,7 +188,9 @@ export default function Layout({ children }) {
             `}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#00a67e] animate-pulse" />
-                <p className="text-[11px] uppercase tracking-wider text-blue-200/80 font-medium">Espace client securise</p>
+                <p className="text-[11px] uppercase tracking-wider text-blue-200/80 font-medium">
+                  {user?.role === "admin" ? "Espace admin securise" : "Espace client securise"}
+                </p>
               </div>
             </div>
 
@@ -149,14 +226,19 @@ export default function Layout({ children }) {
                       >
                         <div className={`
                           w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300
-                          ${active 
-                            ? "bg-white/20" 
+                          ${active
+                            ? "bg-white/20"
                             : "bg-white/5 group-hover:bg-white/10"
                           }
                         `}>
                           <Icon className="w-[18px] h-[18px]" />
                         </div>
-                        <span className="font-medium text-sm">{item.label}</span>
+                        <span className="font-medium text-sm flex-1">{item.label}</span>
+                        {item.badge && unreadCount > 0 && !active && (
+                          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#00a67e] text-white text-[9px] font-bold flex items-center justify-center ml-auto">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
                         {active && (
                           <ChevronRight className="w-4 h-4 ml-auto opacity-80" />
                         )}
@@ -166,24 +248,26 @@ export default function Layout({ children }) {
                 </div>
               </nav>
 
-              {/* Help Section */}
-              <div className={`
-                mt-4 mb-2 rounded-xl bg-gradient-to-br from-[#00a67e]/20 to-[#00a67e]/5 border border-[#00a67e]/20 p-4
-                transform transition-all duration-700 delay-700
-                ${mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
-              `}>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#00a67e]/20 flex items-center justify-center">
-                    <Headphones className="w-4 h-4 text-[#00a67e]" />
+              {/* Help Section — hidden for admin and gestionnaire */}
+              {!["admin", "gestionnaire"].includes(user?.role) && (
+                <div className={`
+                  mt-4 mb-2 rounded-xl bg-gradient-to-br from-[#00a67e]/20 to-[#00a67e]/5 border border-[#00a67e]/20 p-4
+                  transform transition-all duration-700 delay-700
+                  ${mounted ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
+                `}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#00a67e]/20 flex items-center justify-center">
+                      <Headphones className="w-4 h-4 text-[#00a67e]" />
+                    </div>
+                    <p className="font-semibold text-sm text-white">Besoin d&apos;aide?</p>
                   </div>
-                  <p className="font-semibold text-sm text-white">Besoin d&apos;aide?</p>
+                  <p className="text-xs text-blue-200/70 mb-3">Notre equipe est disponible 24/7</p>
+                  <button type="button" onClick={openChat} className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                    Contacter le support
+                  </button>
                 </div>
-                <p className="text-xs text-blue-200/70 mb-3">Notre equipe est disponible 24/7</p>
-                <button type="button" onClick={openChat} className="w-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  Contacter le support
-                </button>
-              </div>
+              )}
 
             </div>
 
@@ -200,9 +284,17 @@ export default function Layout({ children }) {
               >
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#00a67e] to-[#008c6a] flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                    </div>
+                    {user?.avatar ? (
+                      <img
+                        src={`http://localhost:5000/uploads/${user.avatar.split(/[/\\]/).pop()}`}
+                        alt={user?.name}
+                        className="w-11 h-11 rounded-full object-cover shadow-lg border-2 border-white/20"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#00a67e] to-[#008c6a] flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                    )}
                     <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-[#0f2744]" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -212,7 +304,7 @@ export default function Layout({ children }) {
                   <Settings className="w-4 h-4 text-blue-200/50 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
                 </div>
               </Link>
-              
+
               <button
                 onClick={handleLogout}
                 className="w-full mt-3 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-medium text-sm"

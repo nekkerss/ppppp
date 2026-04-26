@@ -55,6 +55,7 @@ export const expiresSoon = (endDate) => {
 // Get contract status with logic
 export const getContractStatus = (status, endDate) => {
   if (status === "en attente") return "En attente";
+  if (status === "refusé") return "Refusé";
   if (status === "expiré") return "Expiré";
   if (expiresSoon(endDate)) return "Expire bientôt";
   return "Actif";
@@ -73,6 +74,32 @@ export const getSinistreTypeLabel = (type) => {
     batiment: "Bâtiment"
   };
   return labels[type] || null;
+};
+
+export const getBatimentSubTypeLabel = (subType) => {
+  const labels = {
+    degats_eaux: "Dégâts des eaux",
+    incendie: "Incendie",
+    gros_sinistre: "Gros sinistre"
+  };
+  return labels[subType] || null;
+};
+
+export const getSanteSubTypeLabel = (subType) => {
+  const labels = {
+    medicaments_examens: "Médicaments / Examens",
+    hospitalisation: "Hospitalisation"
+  };
+  return labels[subType] || null;
+};
+
+export const getVoyageSubTypeLabel = (subType) => {
+  const labels = {
+    medical_etranger: "Médical à l'étranger",
+    retard_annulation_vol: "Retard ou annulation de vol",
+    perte_vol_bagages: "Perte ou vol de bagages"
+  };
+  return labels[subType] || null;
 };
 
 // Generate activity feed description

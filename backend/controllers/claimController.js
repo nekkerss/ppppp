@@ -15,7 +15,31 @@ exports.createClaim = async (req, res) => {
     const files = {
       attestationTiers: req.files?.attestationTiers?.[0]?.path || null,
       constat: req.files?.constat?.[0]?.path || null,
-      photoVehicule: req.files?.photoVehicule?.[0]?.path || null
+      photoVehicule: req.files?.photoVehicule?.[0]?.path || null,
+      cinPasseport: req.files?.cinPasseport?.[0]?.path || null,
+      policeAssurance: req.files?.policeAssurance?.[0]?.path || null,
+      billetsAvion: req.files?.billetsAvion?.[0]?.path || null,
+      preuveReservation: req.files?.preuveReservation?.[0]?.path || null,
+      feuilleSoins: req.files?.feuilleSoins?.[0]?.path || null,
+      rapportMedical: req.files?.rapportMedical?.[0]?.path || null,
+      facturesOriginales: req.files?.facturesOriginales?.[0]?.path || null,
+      facturesPharmacie: req.files?.facturesPharmacie?.[0]?.path || null,
+      resultatsAnalyses: req.files?.resultatsAnalyses?.[0]?.path || null,
+      prescription: req.files?.prescription?.[0]?.path || null,
+      bulletinHospitalisation: req.files?.bulletinHospitalisation?.[0]?.path || null,
+      factureClinic: req.files?.factureClinic?.[0]?.path || null,
+      compteRenduHospitalisation: req.files?.compteRenduHospitalisation?.[0]?.path || null,
+      carteIdentiteBatiment: req.files?.carteIdentiteBatiment?.[0]?.path || null,
+      contratAssuranceHabitation: req.files?.contratAssuranceHabitation?.[0]?.path || null,
+      declarationEcriteBatiment: req.files?.declarationEcriteBatiment?.[0]?.path || null,
+      photosDegats: req.files?.photosDegats?.[0]?.path || null,
+      listeBiensDommages: req.files?.listeBiensDommages?.[0]?.path || null,
+      constatAmiableEaux: req.files?.constatAmiableEaux?.[0]?.path || null,
+      coordonneesImpliques: req.files?.coordonneesImpliques?.[0]?.path || null,
+      rapportProtectionCivile: req.files?.rapportProtectionCivile?.[0]?.path || null,
+      preuveIntervention: req.files?.preuveIntervention?.[0]?.path || null,
+      rapportExpert: req.files?.rapportExpert?.[0]?.path || null,
+      titrePropriete: req.files?.titrePropriete?.[0]?.path || null
     };
 
     const claim = new Claim({
@@ -24,6 +48,10 @@ exports.createClaim = async (req, res) => {
       email: req.body.email,
       gsm: req.body.gsm,
       immatriculation: req.body.immatriculation || undefined,
+      voyageSubType: req.body.voyageSubType || undefined,
+      santeSubType: req.body.santeSubType || undefined,
+      batimentSubType: req.body.batimentSubType || undefined,
+      numeroPoliceBatiment: req.body.numeroPoliceBatiment || undefined,
       contractId: req.body.contractId,
       description: req.body.description,
       date: req.body.date || new Date(),
@@ -55,16 +83,23 @@ exports.updateClaimStatus = async (req, res) => {
       return res.status(403).json({ message: "Accès interdit" });
     }
 
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
     const allowedStatus = ["en attente", "accepté", "refusé"];
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({ message: "Statut invalide" });
     }
 
+    const updateData = { status };
+    if (status === "refusé") {
+      updateData.rejectionReason = rejectionReason || "";
+    } else {
+      updateData.rejectionReason = null;
+    }
+
     const updated = await Claim.findByIdAndUpdate(
       req.params.id,
-      { status },
-      { new: true }
+      { $set: updateData },
+      { returnDocument: "after" }
     ).populate("userId", "name email role");
 
     if (!updated) {
@@ -146,6 +181,10 @@ exports.updateClaim = async (req, res) => {
       "cinNumber",
       "email",
       "sinistreType",
+      "voyageSubType",
+      "santeSubType",
+      "batimentSubType",
+      "numeroPoliceBatiment",
       "contractId",
       "description",
       "date",
@@ -159,12 +198,20 @@ exports.updateClaim = async (req, res) => {
     });
 
     // Delete old files from disk when replaced by new uploads
-    const fileFields = ["attestationTiers", "constat", "photoVehicule"];
+    const fileFields = [
+      "attestationTiers", "constat", "photoVehicule",
+      "cinPasseport", "policeAssurance", "billetsAvion", "preuveReservation",
+      "feuilleSoins", "rapportMedical", "facturesOriginales",
+      "facturesPharmacie", "resultatsAnalyses", "prescription",
+      "bulletinHospitalisation", "factureClinic", "compteRenduHospitalisation",
+      "carteIdentiteBatiment", "contratAssuranceHabitation", "declarationEcriteBatiment",
+      "photosDegats", "listeBiensDommages", "constatAmiableEaux", "coordonneesImpliques",
+      "rapportProtectionCivile", "preuveIntervention", "rapportExpert", "titrePropriete"
+    ];
     fileFields.forEach((field) => {
       const newFile = req.files?.[field]?.[0]?.path;
       const oldFile = claim.files?.[field];
       if (newFile && oldFile) {
-        // Resolve absolute path — oldFile could be absolute or relative
         const oldPath = path.isAbsolute(oldFile)
           ? oldFile
           : path.join(__dirname, "..", oldFile);
@@ -177,7 +224,31 @@ exports.updateClaim = async (req, res) => {
     const nextFiles = {
       attestationTiers: req.files?.attestationTiers?.[0]?.path || claim.files?.attestationTiers || null,
       constat: req.files?.constat?.[0]?.path || claim.files?.constat || null,
-      photoVehicule: req.files?.photoVehicule?.[0]?.path || claim.files?.photoVehicule || null
+      photoVehicule: req.files?.photoVehicule?.[0]?.path || claim.files?.photoVehicule || null,
+      cinPasseport: req.files?.cinPasseport?.[0]?.path || claim.files?.cinPasseport || null,
+      policeAssurance: req.files?.policeAssurance?.[0]?.path || claim.files?.policeAssurance || null,
+      billetsAvion: req.files?.billetsAvion?.[0]?.path || claim.files?.billetsAvion || null,
+      preuveReservation: req.files?.preuveReservation?.[0]?.path || claim.files?.preuveReservation || null,
+      feuilleSoins: req.files?.feuilleSoins?.[0]?.path || claim.files?.feuilleSoins || null,
+      rapportMedical: req.files?.rapportMedical?.[0]?.path || claim.files?.rapportMedical || null,
+      facturesOriginales: req.files?.facturesOriginales?.[0]?.path || claim.files?.facturesOriginales || null,
+      facturesPharmacie: req.files?.facturesPharmacie?.[0]?.path || claim.files?.facturesPharmacie || null,
+      resultatsAnalyses: req.files?.resultatsAnalyses?.[0]?.path || claim.files?.resultatsAnalyses || null,
+      prescription: req.files?.prescription?.[0]?.path || claim.files?.prescription || null,
+      bulletinHospitalisation: req.files?.bulletinHospitalisation?.[0]?.path || claim.files?.bulletinHospitalisation || null,
+      factureClinic: req.files?.factureClinic?.[0]?.path || claim.files?.factureClinic || null,
+      compteRenduHospitalisation: req.files?.compteRenduHospitalisation?.[0]?.path || claim.files?.compteRenduHospitalisation || null,
+      carteIdentiteBatiment: req.files?.carteIdentiteBatiment?.[0]?.path || claim.files?.carteIdentiteBatiment || null,
+      contratAssuranceHabitation: req.files?.contratAssuranceHabitation?.[0]?.path || claim.files?.contratAssuranceHabitation || null,
+      declarationEcriteBatiment: req.files?.declarationEcriteBatiment?.[0]?.path || claim.files?.declarationEcriteBatiment || null,
+      photosDegats: req.files?.photosDegats?.[0]?.path || claim.files?.photosDegats || null,
+      listeBiensDommages: req.files?.listeBiensDommages?.[0]?.path || claim.files?.listeBiensDommages || null,
+      constatAmiableEaux: req.files?.constatAmiableEaux?.[0]?.path || claim.files?.constatAmiableEaux || null,
+      coordonneesImpliques: req.files?.coordonneesImpliques?.[0]?.path || claim.files?.coordonneesImpliques || null,
+      rapportProtectionCivile: req.files?.rapportProtectionCivile?.[0]?.path || claim.files?.rapportProtectionCivile || null,
+      preuveIntervention: req.files?.preuveIntervention?.[0]?.path || claim.files?.preuveIntervention || null,
+      rapportExpert: req.files?.rapportExpert?.[0]?.path || claim.files?.rapportExpert || null,
+      titrePropriete: req.files?.titrePropriete?.[0]?.path || claim.files?.titrePropriete || null
     };
     claim.files = nextFiles;
 

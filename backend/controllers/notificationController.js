@@ -9,7 +9,7 @@ exports.markAsRead = async (req, res) => {
   const notif = await Notification.findByIdAndUpdate(
     req.params.id,
     { read: true },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   res.json(notif);

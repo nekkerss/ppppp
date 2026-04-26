@@ -7,7 +7,31 @@ const upload = require("../middleware/uploadMiddleware");
 const claimUpload = upload.fields([
   { name: "attestationTiers", maxCount: 1 },
   { name: "constat", maxCount: 1 },
-  { name: "photoVehicule", maxCount: 1 }
+  { name: "photoVehicule", maxCount: 1 },
+  { name: "cinPasseport", maxCount: 1 },
+  { name: "policeAssurance", maxCount: 1 },
+  { name: "billetsAvion", maxCount: 1 },
+  { name: "preuveReservation", maxCount: 1 },
+  { name: "feuilleSoins", maxCount: 1 },
+  { name: "rapportMedical", maxCount: 1 },
+  { name: "facturesOriginales", maxCount: 1 },
+  { name: "facturesPharmacie", maxCount: 1 },
+  { name: "resultatsAnalyses", maxCount: 1 },
+  { name: "prescription", maxCount: 1 },
+  { name: "bulletinHospitalisation", maxCount: 1 },
+  { name: "factureClinic", maxCount: 1 },
+  { name: "compteRenduHospitalisation", maxCount: 1 },
+  { name: "carteIdentiteBatiment", maxCount: 1 },
+  { name: "contratAssuranceHabitation", maxCount: 1 },
+  { name: "declarationEcriteBatiment", maxCount: 1 },
+  { name: "photosDegats", maxCount: 1 },
+  { name: "listeBiensDommages", maxCount: 1 },
+  { name: "constatAmiableEaux", maxCount: 1 },
+  { name: "coordonneesImpliques", maxCount: 1 },
+  { name: "rapportProtectionCivile", maxCount: 1 },
+  { name: "preuveIntervention", maxCount: 1 },
+  { name: "rapportExpert", maxCount: 1 },
+  { name: "titrePropriete", maxCount: 1 }
 ]);
 
 router.post("/", auth, (req, res, next) => {

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import Layout from "../components/Layout";
-import { formatDate, getStatusBadgeColor, truncateText, getSinistreTypeLabel } from "../utils/helpers";
+import { formatDate, getStatusBadgeColor, truncateText, getSinistreTypeLabel, getVoyageSubTypeLabel, getSanteSubTypeLabel, getBatimentSubTypeLabel } from "../utils/helpers";
 import { AuthContext } from "../context/AuthContext";
 
 const getFileUrl = (fileUrl = "") => {
@@ -27,6 +27,7 @@ const getFileUrl = (fileUrl = "") => {
 };
 
 const getFileName = (path = "") => path.replace(/\\/g, "/").split("/").pop();
+const getCleanFileName = (path = "") => getFileName(path).replace(/^\d+-/, "");
 const getFileExt  = (f = "") => f.split(".").pop().toLowerCase();
 const isImage     = (f) => ["jpg", "jpeg", "png", "gif", "webp"].includes(getFileExt(f));
 const isPDF       = (f) => getFileExt(f) === "pdf";
@@ -95,6 +96,10 @@ export default function MonSinistre() {
     cinNumber: "",
     email: "",
     sinistreType: "",
+    voyageSubType: "",
+    santeSubType: "",
+    batimentSubType: "",
+    numeroPoliceBatiment: "",
     contractId: "",
     description: "",
     date: "",
@@ -103,7 +108,31 @@ export default function MonSinistre() {
     files: {
       attestationTiers: null,
       constat: null,
-      photoVehicule: null
+      photoVehicule: null,
+      cinPasseport: null,
+      policeAssurance: null,
+      billetsAvion: null,
+      preuveReservation: null,
+      feuilleSoins: null,
+      rapportMedical: null,
+      facturesOriginales: null,
+      facturesPharmacie: null,
+      resultatsAnalyses: null,
+      prescription: null,
+      bulletinHospitalisation: null,
+      factureClinic: null,
+      compteRenduHospitalisation: null,
+      carteIdentiteBatiment: null,
+      contratAssuranceHabitation: null,
+      declarationEcriteBatiment: null,
+      photosDegats: null,
+      listeBiensDommages: null,
+      constatAmiableEaux: null,
+      coordonneesImpliques: null,
+      rapportProtectionCivile: null,
+      preuveIntervention: null,
+      rapportExpert: null,
+      titrePropriete: null
     }
   });
 
@@ -257,6 +286,74 @@ export default function MonSinistre() {
         fileUrl: sinistre.files.photoVehicule
       });
     }
+    if (sinistre?.files?.cinPasseport) {
+      addUpload({
+        id: `${sinistre._id}-cinPasseport`,
+        label: "CIN / Passeport",
+        type: "Sinistre",
+        fileUrl: sinistre.files.cinPasseport
+      });
+    }
+    if (sinistre?.files?.policeAssurance) {
+      addUpload({
+        id: `${sinistre._id}-policeAssurance`,
+        label: "Police d'assurance voyage",
+        type: "Sinistre",
+        fileUrl: sinistre.files.policeAssurance
+      });
+    }
+    if (sinistre?.files?.billetsAvion) {
+      addUpload({
+        id: `${sinistre._id}-billetsAvion`,
+        label: "Billets d'avion + carte d'embarquement",
+        type: "Sinistre",
+        fileUrl: sinistre.files.billetsAvion
+      });
+    }
+    if (sinistre?.files?.preuveReservation) {
+      addUpload({
+        id: `${sinistre._id}-preuveReservation`,
+        label: "Preuve de réservation",
+        type: "Sinistre",
+        fileUrl: sinistre.files.preuveReservation
+      });
+    }
+
+    const SANTE_FILES = [
+      { key: "feuilleSoins",              label: "Feuille de soins" },
+      { key: "rapportMedical",            label: "Rapport / certificat médical" },
+      { key: "facturesOriginales",        label: "Factures originales" },
+      { key: "facturesPharmacie",         label: "Factures de pharmacie" },
+      { key: "resultatsAnalyses",         label: "Résultats d'analyses / radios / scanner" },
+      { key: "prescription",              label: "Prescription correspondante" },
+      { key: "bulletinHospitalisation",   label: "Bulletin d'hospitalisation" },
+      { key: "factureClinic",             label: "Facture de la clinique / hôpital" },
+      { key: "compteRenduHospitalisation",label: "Compte rendu d'hospitalisation" }
+    ];
+    SANTE_FILES.forEach(({ key, label }) => {
+      if (sinistre?.files?.[key]) {
+        addUpload({ id: `${sinistre._id}-${key}`, label, type: "Sinistre", fileUrl: sinistre.files[key] });
+      }
+    });
+
+    const BATIMENT_FILES = [
+      { key: "carteIdentiteBatiment",      label: "Carte d'identité" },
+      { key: "contratAssuranceHabitation", label: "Contrat d'assurance habitation" },
+      { key: "declarationEcriteBatiment",  label: "Déclaration écrite du sinistre" },
+      { key: "photosDegats",               label: "Photos des dégâts" },
+      { key: "listeBiensDommages",          label: "Liste des biens endommagés" },
+      { key: "constatAmiableEaux",          label: "Constat amiable dégâts des eaux" },
+      { key: "coordonneesImpliques",        label: "Coordonnées des personnes impliquées" },
+      { key: "rapportProtectionCivile",     label: "Rapport protection civile / police" },
+      { key: "preuveIntervention",          label: "Preuve de l'intervention" },
+      { key: "rapportExpert",               label: "Rapport d'expert" },
+      { key: "titrePropriete",              label: "Titre de propriété / contrat de location" }
+    ];
+    BATIMENT_FILES.forEach(({ key, label }) => {
+      if (sinistre?.files?.[key]) {
+        addUpload({ id: `${sinistre._id}-${key}`, label, type: "Sinistre", fileUrl: sinistre.files[key] });
+      }
+    });
 
     const linkedDocs = documentsByClaimId.get(sinistre._id) || [];
     linkedDocs.forEach((doc) => {
@@ -317,6 +414,10 @@ export default function MonSinistre() {
       cinNumber: sinistre.cinNumber || "",
       email: sinistre.email || "",
       sinistreType: sinistre.sinistreType || "",
+      voyageSubType: sinistre.voyageSubType || "",
+      santeSubType: sinistre.santeSubType || "",
+      batimentSubType: sinistre.batimentSubType || "",
+      numeroPoliceBatiment: sinistre.numeroPoliceBatiment || "",
       contractId: typeof sinistre.contractId === "object" ? sinistre.contractId?._id : (sinistre.contractId || ""),
       description: sinistre.description || "",
       date: sinistre.date ? new Date(sinistre.date).toISOString().split("T")[0] : "",
@@ -325,7 +426,31 @@ export default function MonSinistre() {
       files: {
         attestationTiers: null,
         constat: null,
-        photoVehicule: null
+        photoVehicule: null,
+        cinPasseport: null,
+        policeAssurance: null,
+        billetsAvion: null,
+        preuveReservation: null,
+        feuilleSoins: null,
+        rapportMedical: null,
+        facturesOriginales: null,
+        facturesPharmacie: null,
+        resultatsAnalyses: null,
+        prescription: null,
+        bulletinHospitalisation: null,
+        factureClinic: null,
+        compteRenduHospitalisation: null,
+        carteIdentiteBatiment: null,
+        contratAssuranceHabitation: null,
+        declarationEcriteBatiment: null,
+        photosDegats: null,
+        listeBiensDommages: null,
+        constatAmiableEaux: null,
+        coordonneesImpliques: null,
+        rapportProtectionCivile: null,
+        preuveIntervention: null,
+        rapportExpert: null,
+        titrePropriete: null
       }
     });
     setShowEditModal(true);
@@ -348,6 +473,16 @@ export default function MonSinistre() {
       if (editForm.sinistreType) {
         payload.append("sinistreType", editForm.sinistreType);
       }
+      if (editForm.sinistreType === "voyage" && editForm.voyageSubType) {
+        payload.append("voyageSubType", editForm.voyageSubType);
+      }
+      if (editForm.sinistreType === "sante" && editForm.santeSubType) {
+        payload.append("santeSubType", editForm.santeSubType);
+      }
+      if (editForm.sinistreType === "batiment") {
+        if (editForm.batimentSubType) payload.append("batimentSubType", editForm.batimentSubType);
+        if (editForm.numeroPoliceBatiment) payload.append("numeroPoliceBatiment", editForm.numeroPoliceBatiment);
+      }
       payload.append("contractId", editForm.contractId);
       payload.append("description", editForm.description);
       payload.append("date", editForm.date);
@@ -363,6 +498,34 @@ export default function MonSinistre() {
       if (editForm.files.photoVehicule) {
         payload.append("photoVehicule", editForm.files.photoVehicule);
       }
+      if (editForm.files.cinPasseport) {
+        payload.append("cinPasseport", editForm.files.cinPasseport);
+      }
+      if (editForm.files.policeAssurance) {
+        payload.append("policeAssurance", editForm.files.policeAssurance);
+      }
+      if (editForm.files.billetsAvion) {
+        payload.append("billetsAvion", editForm.files.billetsAvion);
+      }
+      if (editForm.files.preuveReservation) {
+        payload.append("preuveReservation", editForm.files.preuveReservation);
+      }
+      const SANTE_KEYS = [
+        "feuilleSoins","rapportMedical","facturesOriginales",
+        "facturesPharmacie","resultatsAnalyses","prescription",
+        "bulletinHospitalisation","factureClinic","compteRenduHospitalisation"
+      ];
+      SANTE_KEYS.forEach((k) => {
+        if (editForm.files[k]) payload.append(k, editForm.files[k]);
+      });
+      const BATIMENT_KEYS = [
+        "carteIdentiteBatiment","contratAssuranceHabitation","declarationEcriteBatiment",
+        "photosDegats","listeBiensDommages","constatAmiableEaux","coordonneesImpliques",
+        "rapportProtectionCivile","preuveIntervention","rapportExpert","titrePropriete"
+      ];
+      BATIMENT_KEYS.forEach((k) => {
+        if (editForm.files[k]) payload.append(k, editForm.files[k]);
+      });
 
       const res = await API.patch(`/claims/${selectedSinistre._id}`, payload, {
         headers: { "Content-Type": "multipart/form-data" }
@@ -475,6 +638,11 @@ export default function MonSinistre() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{truncateText(sinistre.description, 80)}</p>
+                      {sinistre.status === "refusé" && sinistre.rejectionReason && (
+                        <div className="mb-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                          <span className="font-semibold">Motif de refus :</span> {sinistre.rejectionReason}
+                        </div>
+                      )}
                       {canManage && sinistre.userId && typeof sinistre.userId === "object" && (
                         <p className="text-xs text-[#1a365d] mb-1">Utilisateur: {sinistre.userId.name} ({sinistre.userId.email})</p>
                       )}
@@ -574,6 +742,30 @@ export default function MonSinistre() {
                   <p className="text-gray-600 text-sm">Type de sinistre</p>
                   <p className="font-semibold text-gray-900">{getSinistreTypeLabel(selectedSinistre.sinistreType)}</p>
                 </div>
+                {selectedSinistre.sinistreType === "voyage" && selectedSinistre.voyageSubType && (
+                  <div>
+                    <p className="text-gray-600 text-sm">Sous-type voyage</p>
+                    <p className="font-semibold text-sky-700">{getVoyageSubTypeLabel(selectedSinistre.voyageSubType)}</p>
+                  </div>
+                )}
+                {selectedSinistre.sinistreType === "sante" && selectedSinistre.santeSubType && (
+                  <div>
+                    <p className="text-gray-600 text-sm">Sous-type santé</p>
+                    <p className="font-semibold text-rose-600">{getSanteSubTypeLabel(selectedSinistre.santeSubType)}</p>
+                  </div>
+                )}
+                {selectedSinistre.sinistreType === "batiment" && selectedSinistre.batimentSubType && (
+                  <div>
+                    <p className="text-gray-600 text-sm">Sous-type bâtiment</p>
+                    <p className="font-semibold text-emerald-700">{getBatimentSubTypeLabel(selectedSinistre.batimentSubType)}</p>
+                  </div>
+                )}
+                {selectedSinistre.sinistreType === "batiment" && selectedSinistre.numeroPoliceBatiment && (
+                  <div>
+                    <p className="text-gray-600 text-sm">N° de police d&apos;assurance</p>
+                    <p className="font-semibold text-gray-900">{selectedSinistre.numeroPoliceBatiment}</p>
+                  </div>
+                )}
                 {selectedSinistre.fullName && (
                   <div>
                     <p className="text-gray-600 text-sm">Nom</p>
@@ -602,6 +794,12 @@ export default function MonSinistre() {
                     {selectedSinistre.status === "en attente" ? "En attente" : selectedSinistre.status === "accepté" ? "Accepté" : "Refusé"}
                   </p>
                 </div>
+                {selectedSinistre.status === "refusé" && selectedSinistre.rejectionReason && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                    <p className="font-semibold mb-1">Motif de refus :</p>
+                    <p>{selectedSinistre.rejectionReason}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-gray-600 text-sm">Date de soumission</p>
                   <p className="font-semibold text-gray-900">{formatDate(selectedSinistre.date)}</p>
@@ -623,7 +821,7 @@ export default function MonSinistre() {
                         <span className="text-xl shrink-0">{getFileIcon(getFileName(upload.fileUrl))}</span>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-blue-700 truncate">{upload.label}</p>
-                          <p className="text-xs text-gray-500">{getFileName(upload.fileUrl)}{upload.createdAt ? ` • ${formatDate(upload.createdAt)}` : ""}</p>
+                          <p className="text-xs text-gray-400 truncate">{getCleanFileName(upload.fileUrl)}{upload.createdAt ? ` • ${formatDate(upload.createdAt)}` : ""}</p>
                         </div>
                         <span className="ml-auto text-xs font-semibold text-blue-600 shrink-0">👁️ Aperçu</span>
                       </button>
@@ -694,7 +892,7 @@ export default function MonSinistre() {
                   <span className="text-2xl shrink-0">{getFileIcon(getFileName(previewUpload.fileUrl))}</span>
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 truncate max-w-xs md:max-w-md">{previewUpload.label}</p>
-                    <p className="text-xs text-gray-500 truncate">{getFileName(previewUpload.fileUrl)}</p>
+                    <p className="text-xs text-gray-400 truncate">{getCleanFileName(previewUpload.fileUrl)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -889,31 +1087,320 @@ export default function MonSinistre() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { key: "attestationTiers", label: "Attestation du tiers", accept: ".pdf,.jpg,.jpeg,.png" },
-                    { key: "constat", label: "Constat", accept: ".pdf,.jpg,.jpeg,.png" },
-                    { key: "photoVehicule", label: "Photo du véhicule", accept: ".jpg,.jpeg,.png,.pdf" }
-                  ].map((fileField) => (
-                    <div key={fileField.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                      <p className="text-sm font-semibold text-gray-900 mb-2">{fileField.label}</p>
-                      <input
-                        type="file"
-                        accept={fileField.accept}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            files: { ...prev.files, [fileField.key]: e.target.files?.[0] || null }
-                          }))
-                        }
-                        className="w-full text-sm"
-                      />
-                      <p className="text-xs text-gray-500 mt-2">
-                        {editForm.files[fileField.key] ? `Nouveau fichier: ${editForm.files[fileField.key].name}` : "Aucun nouveau fichier choisi"}
-                      </p>
+                {/* Auto file fields */}
+                {editForm.sinistreType === "auto" && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { key: "attestationTiers", label: "Attestation du tiers" },
+                      { key: "constat", label: "Constat" },
+                      { key: "photoVehicule", label: "Photo du véhicule" }
+                    ].map((f) => (
+                      <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                        <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                        {selectedSinistre?.files?.[f.key] && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })}
+                            className="text-xs text-sky-600 underline mb-2 block"
+                          >
+                            Voir le fichier actuel
+                          </button>
+                        )}
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))}
+                          className="w-full text-sm"
+                        />
+                        {editForm.files[f.key] && (
+                          <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Santé file fields */}
+                {editForm.sinistreType === "sante" && (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type santé</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {[
+                          { id: "medicaments_examens", label: "Médicaments / Examens" },
+                          { id: "hospitalisation", label: "Hospitalisation" }
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setEditForm((prev) => ({ ...prev, santeSubType: opt.id }))}
+                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                              editForm.santeSubType === opt.id
+                                ? "border-[#00a67e] bg-rose-50 text-[#00a67e]"
+                                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Base documents */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { key: "feuilleSoins",       label: "Feuille de soins" },
+                        { key: "rapportMedical",      label: "Rapport / certificat médical" },
+                        { key: "facturesOriginales",  label: "Factures originales" }
+                      ].map((f) => (
+                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && (
+                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                          )}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Conditional documents */}
+                    {editForm.santeSubType === "medicaments_examens" && (
+                      <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-rose-700 mb-3">Documents — Médicaments / Examens</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {[
+                            { key: "facturesPharmacie",  label: "Factures de pharmacie" },
+                            { key: "resultatsAnalyses",  label: "Résultats d'analyses / radios / scanner" },
+                            { key: "prescription",       label: "Prescription correspondante" }
+                          ].map((f) => (
+                            <div key={f.key} className="rounded-2xl border border-dashed border-rose-200 bg-white p-4">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && (
+                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                              )}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {editForm.santeSubType === "hospitalisation" && (
+                      <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-rose-700 mb-3">Documents — Hospitalisation</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {[
+                            { key: "bulletinHospitalisation",    label: "Bulletin d'hospitalisation" },
+                            { key: "factureClinic",              label: "Facture de la clinique / hôpital" },
+                            { key: "compteRenduHospitalisation", label: "Compte rendu d'hospitalisation" }
+                          ].map((f) => (
+                            <div key={f.key} className="rounded-2xl border border-dashed border-rose-200 bg-white p-4">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && (
+                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                              )}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Bâtiment file fields */}
+                {editForm.sinistreType === "batiment" && (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type bâtiment</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { id: "degats_eaux",   label: "Dégâts des eaux" },
+                          { id: "incendie",      label: "Incendie" },
+                          { id: "gros_sinistre", label: "Gros sinistre" }
+                        ].map((opt) => (
+                          <button key={opt.id} type="button"
+                            onClick={() => setEditForm((prev) => ({ ...prev, batimentSubType: opt.id }))}
+                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                              editForm.batimentSubType === opt.id
+                                ? "border-[#00a67e] bg-emerald-50 text-[#00a67e]"
+                                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                            }`}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Numéro de police d&apos;assurance</label>
+                      <input type="text" value={editForm.numeroPoliceBatiment}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, numeroPoliceBatiment: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
+                        placeholder="Ex : POL-2024-XXXXXX"
+                      />
+                    </div>
+
+                    {/* Base docs */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { key: "carteIdentiteBatiment",      label: "Carte d'identité" },
+                        { key: "contratAssuranceHabitation", label: "Contrat d'assurance habitation" },
+                        { key: "declarationEcriteBatiment",  label: "Déclaration écrite" }
+                      ].map((f) => (
+                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && (
+                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                          )}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { key: "photosDegats",       label: "Photos des dégâts" },
+                        { key: "listeBiensDommages", label: "Liste des biens endommagés" }
+                      ].map((f) => (
+                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && (
+                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                          )}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Conditional docs */}
+                    {editForm.batimentSubType === "degats_eaux" && (
+                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Dégâts des eaux</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { key: "constatAmiableEaux",   label: "Constat amiable dégâts des eaux" },
+                            { key: "coordonneesImpliques", label: "Coordonnées des personnes impliquées" }
+                          ].map((f) => (
+                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && (
+                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                              )}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {editForm.batimentSubType === "incendie" && (
+                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Incendie</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { key: "rapportProtectionCivile", label: "Rapport protection civile / police" },
+                            { key: "preuveIntervention",      label: "Preuve de l'intervention" }
+                          ].map((f) => (
+                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && (
+                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                              )}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {editForm.batimentSubType === "gros_sinistre" && (
+                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
+                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Gros sinistre</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { key: "rapportExpert",  label: "Rapport d'expert" },
+                            { key: "titrePropriete", label: "Titre de propriété / contrat de location" }
+                          ].map((f) => (
+                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && (
+                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
+                              )}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
+                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Voyage file fields */}
+                {editForm.sinistreType === "voyage" && (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type voyage</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { id: "medical_etranger", label: "Médical à l'étranger" },
+                          { id: "retard_annulation_vol", label: "Retard ou annulation de vol" },
+                          { id: "perte_vol_bagages", label: "Perte ou vol de bagages" }
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setEditForm((prev) => ({ ...prev, voyageSubType: opt.id }))}
+                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                              editForm.voyageSubType === opt.id
+                                ? "border-[#00a67e] bg-sky-50 text-[#00a67e]"
+                                : "border-slate-200 text-slate-700 hover:border-slate-300"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { key: "cinPasseport", label: "CIN / Passeport" },
+                        { key: "policeAssurance", label: "Police d'assurance voyage" },
+                        { key: "billetsAvion", label: "Billets d'avion + carte d'embarquement" },
+                        { key: "preuveReservation", label: "Preuve de réservation (hôtel, agence…)" }
+                      ].map((f) => (
+                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })}
+                              className="text-xs text-sky-600 underline mb-2 block"
+                            >
+                              Voir le fichier actuel
+                            </button>
+                          )}
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))}
+                            className="w-full text-sm"
+                          />
+                          {editForm.files[f.key] && (
+                            <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
                   <button
