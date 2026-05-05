@@ -2,6 +2,7 @@ import { useContext, useState, useEffect, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { ChatContext } from "../context/ChatContext";
+import { useTheme } from "../context/ThemeContext";
 import API from "../api/axios";
 import {
   LayoutDashboard,
@@ -19,12 +20,15 @@ import {
   HelpCircle,
   ClipboardList,
   Users,
-  Bell
+  Bell,
+  Sun,
+  Moon
 } from "lucide-react";
 
 export default function Layout({ children }) {
   const { user, logout } = useContext(AuthContext);
   const { openChat } = useContext(ChatContext);
+  const { dark, toggle: toggleDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -87,8 +91,9 @@ export default function Layout({ children }) {
 
   const menuItems = user?.role === "admin"
     ? [
-        { path: "/contracts", label: "Contrats", icon: FileText },
-        { path: "/admin/dashboard", label: "Users", icon: Users }
+        { path: "/gestionnaire/contracts", label: "Contrats", icon: FileText },
+        { path: "/admin/dashboard", label: "Users", icon: Users },
+        { path: "/messages", label: "Messages", icon: MessageSquare, badge: true }
       ]
     : user?.role === "gestionnaire"
       ? [
@@ -102,17 +107,15 @@ export default function Layout({ children }) {
         { path: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
         { path: "/contracts", label: "Contrats", icon: FileText },
         { path: "/declaration-sinistre", label: "Declaration sinistre", icon: ClipboardList },
-        { path: "/claims", label: "Reclamations", icon: AlertTriangle },
         { path: "/mon-sinistre", label: "Mon sinistre", icon: AlertTriangle },
         { path: "/quotes", label: "Devis", icon: Calculator },
-        { path: "/documents", label: "Documents", icon: FolderOpen },
         { path: "/messages", label: "Messages", icon: MessageSquare, badge: true }
       ];
 
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       {/* Login unread notification banner */}
       {loginBanner && (
         <div
@@ -164,20 +167,20 @@ export default function Layout({ children }) {
               transform transition-all duration-700 delay-100
               ${mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}
             `}>
-              <Link to="/" className="flex items-center gap-3 group">
+              <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#00a67e]/30 rounded-xl blur-md group-hover:blur-lg transition-all" />
+                  <div className="absolute inset-0 bg-[#00a67e]/30 rounded-xl blur-md" />
                   <img
                     src="/images/logo.jpg"
                     alt="BNA Assurances"
-                    className="relative h-12 w-12 object-contain bg-white rounded-xl p-1.5 shadow-lg group-hover:scale-105 transition-transform"
+                    className="relative h-12 w-12 object-contain bg-white rounded-xl p-1.5 shadow-lg"
                   />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white tracking-wide">BNA</h1>
                   <p className="text-xs font-medium text-[#00a67e]">Assurances</p>
                 </div>
-              </Link>
+              </div>
             </div>
 
             {/* Client Badge */}
@@ -305,13 +308,22 @@ export default function Layout({ children }) {
                 </div>
               </Link>
 
-              <button
-                onClick={handleLogout}
-                className="w-full mt-3 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-medium text-sm"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Deconnexion</span>
-              </button>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={handleLogout}
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500 border border-red-500/30 hover:border-red-500 text-red-400 hover:text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-medium text-sm"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Deconnexion</span>
+                </button>
+                <button
+                  onClick={toggleDark}
+                  title={dark ? "Mode clair" : "Mode sombre"}
+                  className="flex items-center justify-center w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 text-white shrink-0"
+                >
+                  {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -330,7 +342,7 @@ export default function Layout({ children }) {
 
         {/* Main Content */}
         <main className={`
-          flex-1 min-h-screen min-w-0 md:ml-[280px]
+          flex-1 min-h-screen min-w-0 md:ml-[280px] p-6 md:p-8
           transform transition-all duration-700 delay-300
           ${mounted ? "opacity-100" : "opacity-0"}
         `}>

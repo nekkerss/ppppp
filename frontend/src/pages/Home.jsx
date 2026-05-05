@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useContext } from "react"
 import { Link } from "react-router-dom"
-import { ArrowRight, Clock, ShieldCheck, Sparkles, Users, ChevronDown, Star, TrendingUp, Award } from "lucide-react"
+import { ArrowRight, Clock, ShieldCheck, Sparkles, Users, ChevronDown, Star, TrendingUp, Award, LayoutDashboard } from "lucide-react"
 import Header from "../components/Header"
 import ServicesSection from "../components/ServicesSection"
 import Footer from "../components/Footer"
 import PublicIconSidebar from "../components/PublicIconSidebar"
 import Reveal from "../components/Reveal"
+import { AuthContext } from "../context/AuthContext"
 
 function CountUp({ target, suffix = "", duration = 2000 }) {
   const [count, setCount] = useState(0);
@@ -42,6 +43,7 @@ function CountUp({ target, suffix = "", duration = 2000 }) {
 
 export default function Home() {
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const t = setTimeout(() => setHeroLoaded(true), 100);
@@ -171,6 +173,16 @@ export default function Home() {
                 Découvrir nos services
                 <ChevronDown className="ml-2 h-4 w-4 group-hover:translate-y-1 transition-transform" />
               </a>
+              {user && (
+                <Link
+                  to="/dashboard"
+                  className="group inline-flex items-center justify-center rounded-full border border-[#00a67e]/60 bg-[#00a67e]/15 px-9 py-4 text-sm font-bold text-white shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-[#00a67e]/25 hover:border-[#00a67e] hover:shadow-xl sm:text-base"
+                >
+                  <LayoutDashboard className="mr-2.5 h-4 w-4" />
+                  Mon espace
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              )}
             </div>
 
             {/* Stats cards */}

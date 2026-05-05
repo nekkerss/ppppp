@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../api/axios";
 import Layout from "../components/Layout";
 import { formatDate, formatCurrency } from "../utils/helpers";
-import { Sparkles, Car, Heart, Home, Plane, Shield, X, Loader2 } from "lucide-react";
+import { Sparkles, Car, Heart, Home, Plane, Shield, X, Loader2, TrendingUp, Download } from "lucide-react";
 
 const TYPES = [
   { value: "auto",       label: "Assurance Auto",       icon: Car,    color: "blue" },
@@ -64,6 +64,18 @@ export default function Quotes() {
 
   useEffect(() => { fetchQuotes(); }, []);
   useEffect(() => { setFormFields({}); }, [formType]);
+
+  const downloadQuotePdf = async (quote) => {
+    try {
+      const res = await API.get(`/pdf/quote/${quote._id}`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `devis-${quote._id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  };
 
   const fetchQuotes = async () => {
     try {
@@ -142,48 +154,78 @@ export default function Quotes() {
           />
         </div>
 
-        {/* Quotes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Quotes Grid — fixed 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredQuotes.length === 0 ? (
-            <div className="col-span-full bg-white rounded-xl border border-gray-100 p-10 text-center">
+            <div className="col-span-full bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-12 text-center">
               <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Aucun devis. Commencez par en demander un !</p>
+              <p className="text-gray-500 dark:text-slate-400">Aucun devis. Commencez par en demander un !</p>
             </div>
           ) : (
             filteredQuotes.map((quote) => {
               const Icon = TYPE_ICONS[quote.type] || Shield;
+              const typeInfo = TYPES.find((t) => t.value === quote.type);
+
+              const accentMap = {
+                auto:       { bg: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",   text: "text-blue-600 dark:text-blue-400",   border: "border-blue-200 dark:border-blue-800",   icon: "bg-blue-100 dark:bg-blue-900/40" },
+                sante:      { bg: "bg-rose-500",     light: "bg-rose-50 dark:bg-rose-900/20",   text: "text-rose-600 dark:text-rose-400",   border: "border-rose-200 dark:border-rose-800",   icon: "bg-rose-100 dark:bg-rose-900/40" },
+                habitation: { bg: "bg-amber-500",    light: "bg-amber-50 dark:bg-amber-900/20", text: "text-amber-600 dark:text-amber-400", border: "border-amber-200 dark:border-amber-800", icon: "bg-amber-100 dark:bg-amber-900/40" },
+                voyage:     { bg: "bg-sky-500",      light: "bg-sky-50 dark:bg-sky-900/20",     text: "text-sky-600 dark:text-sky-400",     border: "border-sky-200 dark:border-sky-800",     icon: "bg-sky-100 dark:bg-sky-900/40" },
+                vie:        { bg: "bg-emerald-500",  light: "bg-emerald-50 dark:bg-emerald-900/20", text: "text-emerald-600 dark:text-emerald-400", border: "border-emerald-200 dark:border-emerald-800", icon: "bg-emerald-100 dark:bg-emerald-900/40" },
+              };
+              const accent = accentMap[quote.type] || accentMap.auto;
+
               return (
                 <div
                   key={quote._id}
                   onClick={() => { setSelectedQuote(quote); setShowDetailModal(true); }}
-                  className={`bg-white rounded-xl shadow-sm border border-gray-100 border-t-4 ${TYPE_COLORS[quote.type] || "border-t-gray-400"} p-5 cursor-pointer hover:shadow-md transition-all`}
+                  className="group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
-                        <Icon className="w-5 h-5 text-gray-600" />
+                  {/* Coloured header band */}
+                  <div className={`${accent.bg} px-5 py-4 flex items-center justify-between`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                        <Icon className="w-4.5 h-4.5 text-white" />
                       </div>
-                      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-                        {TYPES.find((t) => t.value === quote.type)?.label || quote.type}
-                      </p>
+                      <div>
+                        <p className="text-[10px] text-white/70 uppercase tracking-widest font-semibold">Devis</p>
+                        <p className="text-sm font-bold text-white leading-tight">{typeInfo?.label || quote.type}</p>
+                      </div>
                     </div>
-                    <span className="text-xs bg-[#effaf5] text-[#00a67e] border border-[#00a67e]/20 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> IA
+                    <span className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-full font-semibold">
+                      #{quote._id.toString().slice(-4).toUpperCase()}
                     </span>
                   </div>
 
-                  <p className="text-3xl font-black text-gray-900 mb-1">
-                    {formatCurrency(quote.prix)}
-                  </p>
-                  <p className="text-xs text-gray-400 mb-3">Prime annuelle estimée</p>
+                  {/* Body */}
+                  <div className="p-5">
+                    {/* Price */}
+                    <div className={`${accent.light} rounded-xl px-4 py-3 mb-4 border ${accent.border}`}>
+                      <p className="text-[10px] text-gray-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Prime annuelle estimée</p>
+                      <p className={`text-2xl font-black ${accent.text}`}>{formatCurrency(quote.prix)}</p>
+                    </div>
 
-                  {quote.explication && (
-                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3 italic">
-                      "{quote.explication}"
-                    </p>
-                  )}
+                    {/* AI explanation */}
+                    {quote.explication && (
+                      <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-2 italic mb-4">
+                        "{quote.explication}"
+                      </p>
+                    )}
 
-                  <p className="text-xs text-gray-400">Généré le {formatDate(quote.createdAt)}</p>
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-700">
+                      <div className="flex items-center gap-1.5 text-[10px] text-gray-400 dark:text-slate-500">
+                        <TrendingUp className="w-3 h-3" />
+                        {formatDate(quote.createdAt)}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); downloadQuotePdf(quote); }}
+                        className={`flex items-center gap-1.5 text-xs font-bold ${accent.text} hover:opacity-70 transition-opacity`}
+                      >
+                        <Download className="w-3.5 h-3.5" /> Télécharger PDF
+                      </button>
+                    </div>
+                  </div>
                 </div>
               );
             })

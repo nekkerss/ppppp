@@ -95,16 +95,32 @@ exports.getUnreadCount = async (req, res) => {
   }
 };
 
-// Legacy: get all messages (kept for backward compat)
+// Delete all messages in a conversation between current user and another user
+exports.deleteConversation = async (req, res) => {
+  try {
+    const uid     = new mongoose.Types.ObjectId(req.user.id);
+    const otherId = new mongoose.Types.ObjectId(req.params.userId);
+
+    await Message.deleteMany({
+      $or: [
+        { senderId: uid,     receiverId: otherId },
+        { senderId: otherId, receiverId: uid     }
+      ]
+    });
+
+    return res.json({ message: "Conversation supprimée" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Get messages scoped to the current user only (every role sees only their own)
 exports.getMessages = async (req, res) => {
   try {
-    const currentUser = await User.findById(req.user.id).select("role");
-    const canSeeAll = ["admin", "gestionnaire"].includes(currentUser?.role);
-    const query = canSeeAll
-      ? {}
-      : { $or: [{ senderId: req.user.id }, { receiverId: req.user.id }] };
-
-    const msgs = await Message.find(query)
+    const uid = new mongoose.Types.ObjectId(req.user.id);
+    const msgs = await Message.find({
+      $or: [{ senderId: uid }, { receiverId: uid }]
+    })
       .populate("senderId",   "name email role")
       .populate("receiverId", "name email role")
       .sort({ createdAt: -1 });

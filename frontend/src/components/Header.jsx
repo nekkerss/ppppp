@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { Car, ChevronDown, Heart, HeartPulse, Home as HomeIcon, Menu, Plane, ShieldCheck, X, Sparkles } from "lucide-react"
+import { Car, ChevronDown, Heart, HeartPulse, Home as HomeIcon, Menu, Moon, Plane, ShieldCheck, Sun, X, Sparkles } from "lucide-react"
 import { servicesData } from "../data/servicesData"
+import { useTheme } from "../context/ThemeContext"
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [servicesMobileOpen, setServicesMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { dark, toggle } = useTheme()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -31,8 +33,8 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/95 backdrop-blur-xl shadow-lg shadow-slate-900/5 border-b border-slate-200/80"
-          : "bg-white/80 backdrop-blur-md border-b border-transparent"
+          ? "bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-slate-950/30 border-b border-slate-200/80 dark:border-slate-700/80"
+          : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -45,11 +47,11 @@ export default function Header() {
               <img
                 src="/images/logo.jpg"
                 alt="BNA"
-                className="relative h-10 md:h-11 w-10 md:w-11 object-contain rounded-xl bg-white ring-1 ring-slate-200/80 shadow-md group-hover:scale-105 transition-transform duration-300"
+                className="relative h-10 md:h-11 w-10 md:w-11 object-contain rounded-xl bg-white ring-1 ring-slate-200/80 dark:ring-slate-700/80 shadow-md group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-xl font-black text-[#0f2744] tracking-tight leading-none">BNA</span>
+              <span className="text-xl font-black text-[#0f2744] dark:text-white tracking-tight leading-none">BNA</span>
               <span className="text-[10px] font-bold text-[#00a67e] uppercase tracking-[0.18em] leading-none mt-[5px]">Assurances</span>
             </div>
           </Link>
@@ -60,7 +62,7 @@ export default function Header() {
             <div className="relative group">
               <button
                 type="button"
-                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-[#0f2744] hover:bg-slate-100 transition-all duration-200"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-[#0f2744] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
                 aria-haspopup="true"
               >
                 Nos Services
@@ -68,7 +70,7 @@ export default function Header() {
               </button>
 
               <div
-                className="absolute left-1/2 top-full mt-3 w-[920px] max-w-[90vw] rounded-3xl bg-white shadow-2xl shadow-slate-900/10 border border-slate-200/80
+                className="absolute left-1/2 top-full mt-3 w-[920px] max-w-[90vw] rounded-3xl bg-white dark:bg-slate-800 shadow-2xl shadow-slate-900/10 dark:shadow-slate-950/40 border border-slate-200/80 dark:border-slate-700/80
                   opacity-0 translate-y-2 scale-[0.97] pointer-events-none
                   transition-all duration-250 ease-out
                   group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100
@@ -79,7 +81,7 @@ export default function Header() {
               >
                 <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
                   <div className="lg:col-span-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
                       Nos Assurances
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -89,14 +91,14 @@ export default function Header() {
                           <Link
                             key={item.type}
                             to={item.to}
-                            className="group/item rounded-2xl border border-slate-100 bg-slate-50/50 p-4 hover:border-[#00a67e]/40 hover:bg-[#effaf5] transition-all duration-200 flex items-start gap-3"
+                            className="group/item rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/50 p-4 hover:border-[#00a67e]/40 hover:bg-[#effaf5] dark:hover:bg-[#00a67e]/10 transition-all duration-200 flex items-start gap-3"
                           >
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#00a67e]/10 border border-[#00a67e]/15 group-hover/item:bg-[#00a67e]/20 transition-colors">
                               <Icon className="h-5 w-5 text-[#00a67e]" />
                             </div>
                             <div>
-                              <p className="font-semibold text-[#1a365d] text-sm">{item.title}</p>
-                              <p className="mt-0.5 text-xs text-slate-500 leading-snug">{item.description}</p>
+                              <p className="font-semibold text-[#1a365d] dark:text-white text-sm">{item.title}</p>
+                              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 leading-snug">{item.description}</p>
                             </div>
                           </Link>
                         )
@@ -146,7 +148,7 @@ export default function Header() {
               <Link
                 key={item.to}
                 to={item.to}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-[#0f2744] hover:bg-slate-100 transition-all duration-200"
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-[#0f2744] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
               >
                 {item.label}
               </Link>
@@ -155,9 +157,17 @@ export default function Header() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggle}
+              title={dark ? "Mode clair" : "Mode sombre"}
+              className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all duration-200"
+            >
+              {dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            </button>
             <Link
               to="/login"
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#0f2744] hover:bg-slate-100 transition-all duration-200"
+              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-[#0f2744] dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
             >
               Connexion
             </Link>
@@ -171,7 +181,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2.5 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2.5 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             onClick={() =>
               setMobileMenuOpen((prev) => {
                 if (prev) setServicesMobileOpen(false)
@@ -188,13 +198,13 @@ export default function Header() {
       {/* Mobile Menu */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          mobileMenuOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
+          mobileMenuOpen ? "max-h-[680px] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="bg-white border-t border-slate-200 px-4 py-4 space-y-2">
+        <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 px-4 py-4 space-y-2">
           <button
             type="button"
-            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             onClick={() => setServicesMobileOpen((prev) => !prev)}
           >
             <span>Nos Services</span>
@@ -210,14 +220,14 @@ export default function Header() {
                     key={item.type}
                     to={item.to}
                     onClick={closeMenus}
-                    className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3 hover:border-[#00a67e]/40 hover:bg-[#effaf5] transition-all"
+                    className="flex items-start gap-3 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 hover:border-[#00a67e]/40 hover:bg-[#effaf5] dark:hover:bg-[#00a67e]/10 transition-all"
                   >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#00a67e]/10 border border-[#00a67e]/15">
                       <Icon className="h-4 w-4 text-[#00a67e]" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm text-[#1a365d]">{item.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5 leading-snug">{item.description}</p>
+                      <p className="font-semibold text-sm text-[#1a365d] dark:text-white">{item.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">{item.description}</p>
                     </div>
                   </Link>
                 )
@@ -234,17 +244,27 @@ export default function Header() {
               key={item.to}
               to={item.to}
               onClick={closeMenus}
-              className="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               {item.label}
             </Link>
           ))}
 
-          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+            {/* Dark mode toggle row */}
+            <button
+              onClick={toggle}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              {dark
+                ? <Sun className="w-4 h-4 text-amber-400" />
+                : <Moon className="w-4 h-4 text-slate-500" />}
+              {dark ? "Mode clair" : "Mode sombre"}
+            </button>
             <Link
               to="/login"
               onClick={closeMenus}
-              className="w-full px-4 py-3 text-sm font-bold text-center border-2 border-[#0f2744] text-[#0f2744] hover:bg-[#0f2744] hover:text-white rounded-xl transition-all duration-200"
+              className="w-full px-4 py-3 text-sm font-bold text-center border-2 border-[#0f2744] dark:border-slate-500 text-[#0f2744] dark:text-slate-200 hover:bg-[#0f2744] hover:text-white dark:hover:bg-slate-700 rounded-xl transition-all duration-200"
             >
               Connexion
             </Link>

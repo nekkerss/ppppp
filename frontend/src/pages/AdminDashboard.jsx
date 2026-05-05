@@ -101,7 +101,7 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#1a365d] to-[#2d4a7c] px-6 py-8 md:px-10">
           <div className="max-w-7xl mx-auto">
@@ -119,23 +119,23 @@ export default function AdminDashboard() {
           )}
 
           {/* Search */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 p-4">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par nom, email, CIN..."
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#00a67e]"
+              className="w-full border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#00a67e] bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
             />
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 border-b border-gray-200">
+          <div className="flex gap-2 border-b border-gray-200 dark:border-slate-700">
             <button
               onClick={() => { setActiveTab("users"); setSelectedAccount(null); }}
               className={`px-6 py-3 text-sm font-semibold rounded-t-lg border border-b-0 transition-colors ${
                 activeTab === "users"
-                  ? "bg-white border-gray-200 text-[#1a365d]"
-                  : "bg-transparent border-transparent text-gray-500 hover:text-[#1a365d]"
+                  ? "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-[#1a365d]"
+                  : "bg-transparent border-transparent text-gray-500 dark:text-slate-400 hover:text-[#1a365d]"
               }`}
             >
               Utilisateurs
@@ -147,8 +147,8 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab("gestionnaires"); setSelectedAccount(null); }}
               className={`px-6 py-3 text-sm font-semibold rounded-t-lg border border-b-0 transition-colors ${
                 activeTab === "gestionnaires"
-                  ? "bg-white border-gray-200 text-[#1a365d]"
-                  : "bg-transparent border-transparent text-gray-500 hover:text-[#1a365d]"
+                  ? "bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-[#1a365d]"
+                  : "bg-transparent border-transparent text-gray-500 dark:text-slate-400 hover:text-[#1a365d]"
               }`}
             >
               Gestionnaires
@@ -161,8 +161,8 @@ export default function AdminDashboard() {
           {/* Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Account list */}
-            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
                 <h2 className="font-semibold text-[#1a365d]">
                   {activeTab === "users" ? "Liste des utilisateurs" : "Liste des gestionnaires"}
                 </h2>
@@ -175,11 +175,11 @@ export default function AdminDashboard() {
               </div>
 
               {loading ? (
-                <div className="p-6 text-gray-500">Chargement...</div>
+                <div className="p-6 text-gray-500 dark:text-slate-400">Chargement...</div>
               ) : filteredAccounts.length === 0 ? (
-                <div className="p-6 text-gray-500">Aucun compte trouvé.</div>
+                <div className="p-6 text-gray-500 dark:text-slate-400">Aucun compte trouvé.</div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 dark:divide-slate-700">
                   {filteredAccounts.map((account) => (
                     <div key={account._id} className="p-4 flex items-start justify-between gap-4">
                       <div>

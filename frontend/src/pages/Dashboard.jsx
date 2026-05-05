@@ -9,17 +9,12 @@ import {
   FileCheck,
   FolderOpen,
   ArrowRight,
+  ArrowLeft,
   Plus,
-  Upload,
   Clock,
   CheckCircle,
-  RefreshCw,
-  Shield,
-  TrendingUp,
-  Sparkles,
-  Bell,
-  Calendar,
-  Wallet
+  Zap,
+  Shield
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -143,7 +138,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex items-center justify-center min-h-[70vh]">
           <div className="text-center">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-4 border-[#00a67e]/20 border-t-[#00a67e] animate-spin"></div>
@@ -161,9 +156,8 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-slate-50">
-        {/* Hero Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#0f2744] via-[#153356] to-[#1a3a5c]">
+        {/* Hero Header — negative margins break it out of Layout's p-6/p-8 padding */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0f2744] via-[#153356] to-[#1a3a5c] -mx-6 -mt-6 md:-mx-8 md:-mt-8 rounded-b-3xl">
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#00a67e]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#00a67e]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
@@ -176,16 +170,18 @@ export default function Dashboard() {
             ${mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}
           `}
           >
-            <div
+            {/* Back to home */}
+            <Link
+              to="/"
               className={`
-              inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00a67e]/20 border border-[#00a67e]/30 text-[#00a67e] text-sm font-semibold mb-5
-              transform transition-all duration-700 delay-100
-              ${mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}
-            `}
+                inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-medium mb-4 transition-colors duration-200
+                transform transition-all duration-700
+                ${mounted ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}
+              `}
             >
-              <Sparkles className="w-4 h-4" />
-              Espace Client BNA Assurances
-            </div>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Retour à l&apos;accueil
+            </Link>
 
             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
               <div
@@ -229,7 +225,7 @@ export default function Dashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="w-full px-6 md:px-10 py-8 space-y-8">
+        <div className="space-y-8 mt-8">
           {/* Success Message */}
           {loginSuccessMessage && (
             <div
@@ -247,7 +243,7 @@ export default function Dashboard() {
           )}
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {[
               {
                 title: "Mes Contrats",
@@ -283,25 +279,12 @@ export default function Dashboard() {
                 link: "/quotes",
                 linkText: "Voir les devis",
                 delay: 300
-              },
-              {
-                title: "Documents",
-                value: documents.length,
-                subtext: getLastDocument()
-                  ? `Dernier: ${formatDate(getLastDocument().createdAt)}`
-                  : "Aucun document",
-                icon: FolderOpen,
-                iconBg: "bg-purple-100",
-                iconColor: "text-purple-600",
-                link: "/documents",
-                linkText: "Voir tous les documents",
-                delay: 400
               }
             ].map((card, index) => (
               <div
                 key={index}
                 className={`
-                  group bg-white rounded-2xl shadow-sm border border-slate-200 p-6
+                  group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6
                   hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1
                   transition-all duration-500
                   transform
@@ -311,13 +294,13 @@ export default function Dashboard() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-slate-500 text-sm font-medium">{card.title}</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{card.title}</p>
                     <p className="text-4xl font-bold text-[#1a365d] mt-2">{card.value}</p>
-                    <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {card.subtext}
                     </p>
-                    {card.extraInfo && <p className="text-xs text-slate-500 mt-1">{card.extraInfo}</p>}
+                    {card.extraInfo && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{card.extraInfo}</p>}
                   </div>
                   <div
                     className={`w-14 h-14 ${card.iconBg} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
@@ -336,76 +319,58 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Quick Actions & Reminders Row */}
+          {/* Quick Actions */}
           <div
             className={`
-            grid grid-cols-1 xl:grid-cols-3 gap-6
             transform transition-all duration-700 delay-500
             ${mounted ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}
           `}
           >
-            {/* Quick Actions */}
-            <div className="xl:col-span-2 relative overflow-hidden bg-gradient-to-br from-[#f0fdf9] via-[#f6fffc] to-[#e7faf4] rounded-2xl p-6 border border-[#00a67e]/20">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-[#00a67e]/10 rounded-full blur-3xl" />
-              <h3 className="relative font-bold text-[#1a365d] mb-5 flex items-center gap-2 text-lg">
-                <RefreshCw className="w-5 h-5 text-[#00a67e]" />
-                Actions rapides
-              </h3>
-              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative overflow-hidden rounded-2xl border border-[#00a67e]/20 bg-gradient-to-br from-[#f0fdf9] via-white to-[#e7faf4] dark:from-slate-800 dark:via-slate-800 dark:to-slate-800 p-6 shadow-sm">
+              {/* Decorative blobs */}
+              <div className="pointer-events-none absolute -top-10 -right-10 w-52 h-52 bg-[#00a67e]/10 rounded-full blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-10 -left-10 w-40 h-40 bg-[#1a365d]/5 rounded-full blur-3xl" />
+
+              <div className="relative flex items-center gap-2 mb-6">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00a67e]/15 border border-[#00a67e]/20">
+                  <Zap className="w-4.5 h-4.5 text-[#00a67e]" />
+                </div>
+                <h3 className="font-bold text-[#1a365d] dark:text-white text-lg">Actions rapides</h3>
+                <span className="ml-auto text-xs text-slate-400 dark:text-slate-500 font-medium">2 actions</span>
+              </div>
+
+              <div className="relative grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Soumettre une réclamation */}
                 <Link
                   to="/claims"
-                  className="bg-white hover:bg-slate-50 border-2 border-[#1a365d] text-[#1a365d] font-semibold py-4 px-5 rounded-xl transition-all flex items-center justify-center gap-3 hover:shadow-lg hover:-translate-y-0.5"
+                  className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border border-amber-200/60 dark:border-amber-900/40 bg-white dark:bg-slate-700/50 px-5 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  <AlertTriangle className="w-5 h-5" />
-                  Soumettre une reclamation
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
+                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-800/40 group-hover:scale-110 transition-transform duration-200">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="relative flex-1 min-w-0">
+                    <p className="font-bold text-[#1a365d] dark:text-white text-sm">Soumettre une réclamation</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Déclarer un sinistre rapidement</p>
+                  </div>
+                  <ArrowRight className="relative w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-amber-500 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
                 </Link>
+
+                {/* Demander un devis */}
                 <Link
                   to="/quotes"
-                  className="bg-white hover:bg-slate-50 border-2 border-[#00a67e] text-[#00a67e] font-semibold py-4 px-5 rounded-xl transition-all flex items-center justify-center gap-3 hover:shadow-lg hover:-translate-y-0.5"
+                  className="group relative overflow-hidden flex items-center gap-4 rounded-2xl border border-[#00a67e]/25 dark:border-[#00a67e]/30 bg-white dark:bg-slate-700/50 px-5 py-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                 >
-                  <Plus className="w-5 h-5" />
-                  Demander un devis
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#f0fdf9] to-transparent dark:from-[#00a67e]/10 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" />
+                  <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#00a67e]/10 dark:bg-[#00a67e]/20 border border-[#00a67e]/20 group-hover:scale-110 transition-transform duration-200">
+                    <Plus className="w-5 h-5 text-[#00a67e]" />
+                  </div>
+                  <div className="relative flex-1 min-w-0">
+                    <p className="font-bold text-[#1a365d] dark:text-white text-sm">Demander un devis</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Obtenez une estimation gratuite</p>
+                  </div>
+                  <ArrowRight className="relative w-4 h-4 text-slate-300 dark:text-slate-500 group-hover:text-[#00a67e] group-hover:translate-x-1 transition-all duration-200 shrink-0" />
                 </Link>
-                <Link
-                  to="/documents"
-                  className="bg-white hover:bg-slate-50 border-2 border-purple-600 text-purple-600 font-semibold py-4 px-5 rounded-xl transition-all flex items-center justify-center gap-3 hover:shadow-lg hover:-translate-y-0.5"
-                >
-                  <Upload className="w-5 h-5" />
-                  Charger un document
-                </Link>
-              </div>
-            </div>
-
-            {/* Reminders */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="font-bold text-[#1a365d] mb-4 flex items-center gap-2">
-                <Bell className="w-5 h-5 text-[#00a67e]" />
-                Rappels utiles
-              </h3>
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#00a67e]/30 transition-colors">
-                  <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Prochaine echeance
-                  </div>
-                  <p className="font-semibold text-[#1a365d] text-sm">
-                    {getContractExpiryDate() ? formatDate(getContractExpiryDate()) : "Aucune date"}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#00a67e]/30 transition-colors">
-                  <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-                    <Wallet className="w-3.5 h-3.5" />
-                    Prime annuelle
-                  </div>
-                  <p className="font-semibold text-[#1a365d] text-sm">{formatCurrency(getTotalCoverage())}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#00a67e]/30 transition-colors">
-                  <div className="flex items-center gap-2 text-slate-500 text-xs mb-1">
-                    <FolderOpen className="w-3.5 h-3.5" />
-                    Documents stockes
-                  </div>
-                  <p className="font-semibold text-[#1a365d] text-sm">{documents.length} document(s)</p>
-                </div>
               </div>
             </div>
           </div>
@@ -477,20 +442,6 @@ export default function Dashboard() {
                   </div>
                   <p className="font-semibold text-white">Activee</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <div className="flex items-center gap-2 text-blue-200/80 text-xs mb-1">
-                    <FolderOpen className="w-3.5 h-3.5" />
-                    Documents securises
-                  </div>
-                  <p className="font-semibold text-white">{documents.length} fichier(s)</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                  <div className="flex items-center gap-2 text-blue-200/80 text-xs mb-1">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    Valeur couverte
-                  </div>
-                  <p className="font-semibold text-white">{formatCurrency(getTotalCoverage())}</p>
-                </div>
               </div>
               <div className="mt-5 pt-4 border-t border-white/10">
                 <p className="text-xs text-blue-200/60 text-center">Vos donnees sont protegees et chiffrees</p>
@@ -498,7 +449,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
     </Layout>
   );
 }

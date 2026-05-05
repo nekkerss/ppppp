@@ -30,6 +30,7 @@ import ChatbotWidget from "./components/ChatbotWidget";
 // Auth
 import { AuthProvider, AuthContext } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { useContext } from "react";
 
 function ProtectedRoute({ children }) {
@@ -104,14 +105,16 @@ function AuthChatbot() {
 
 function App() {
   return (
-    <ChatProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-          <AuthChatbot />
-        </BrowserRouter>
-      </AuthProvider>
-    </ChatProvider>
+    <ThemeProvider>
+      <ChatProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+            <AuthChatbot />
+          </BrowserRouter>
+        </AuthProvider>
+      </ChatProvider>
+    </ThemeProvider>
   );
 }
 

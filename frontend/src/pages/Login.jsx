@@ -49,7 +49,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex overflow-hidden">
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -182,7 +182,7 @@ export default function Login() {
       </div>
 
       {/* Right Panel — Form */}
-      <div className="w-full lg:w-[48%] flex flex-col justify-center items-center px-6 py-12 bg-white">
+      <div className="w-full lg:w-[48%] flex flex-col justify-center items-center px-6 py-12 bg-white dark:bg-slate-800">
         <div
           className="w-full max-w-[420px]"
           style={{
@@ -204,7 +204,7 @@ export default function Login() {
 
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-slate-500 hover:text-[#0f2744] text-sm font-medium mb-10 transition-colors group"
+            className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#0f2744] dark:hover:text-slate-100 text-sm font-medium mb-10 transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             Retour à l&apos;accueil
@@ -213,7 +213,7 @@ export default function Login() {
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-widest text-[#00a67e] mb-2">Espace Client</p>
             <h2 className="text-3xl font-bold text-[#0f2744] leading-tight">Connexion</h2>
-            <p className="text-slate-500 mt-2">Accédez à votre espace personnel BNA Assurances</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">Accédez à votre espace personnel BNA Assurances</p>
           </div>
 
           {error && (
@@ -237,7 +237,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Adresse email
               </label>
               <div className={`relative rounded-2xl transition-all duration-300 ${focusedField === "email" ? "ring-2 ring-[#00a67e]/40" : ""}`}>
@@ -251,14 +251,14 @@ export default function Login() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
-                  className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-0 outline-none transition-all duration-200 text-slate-800 placeholder-slate-400 text-sm"
+                  className="w-full pl-12 pr-4 py-3.5 border border-slate-200 dark:border-slate-600 rounded-2xl bg-slate-50 dark:bg-slate-700 focus:bg-white dark:focus:bg-slate-600 focus:border-[#00a67e] focus:ring-0 outline-none transition-all duration-200 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
                 Mot de passe
               </label>
               <div className={`relative rounded-2xl transition-all duration-300 ${focusedField === "password" ? "ring-2 ring-[#00a67e]/40" : ""}`}>

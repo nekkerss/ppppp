@@ -40,6 +40,7 @@ app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
+app.use("/api/pdf",  require("./routes/pdfRoutes"));
 
 // Static folder
 app.use("/uploads", express.static(__dirname + "/uploads"));

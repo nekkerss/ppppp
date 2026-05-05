@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import Layout from "../components/Layout";
-import { Trash2, CreditCard, Building2, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
+import { Trash2, CreditCard, Building2, CheckCircle2, Sparkles, Loader2, Download, Car, Heart, Home, Plane, Shield, Calendar } from "lucide-react";
 import { formatDate, getStatusBadgeColor, expiresSoon, getContractStatus } from "../utils/helpers";
 
 const contractTypes = [
@@ -63,6 +63,9 @@ export default function Contracts() {
   // filters
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType]   = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo]     = useState("");
 
   useEffect(() => { fetchContracts(); }, []);
 
@@ -70,6 +73,18 @@ export default function Contracts() {
     if (!showCreateModal) return;
     setCreateForm((prev) => ({ ...prev, contractNumber: prev.contractNumber || generateContractNumber() }));
   }, [showCreateModal]);
+
+  const downloadContractPdf = async (contract) => {
+    try {
+      const res = await API.get(`/pdf/contract/${contract._id}`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contrat-${contract.contractNumber || contract._id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  };
 
   const fetchContracts = async () => {
     try {
@@ -232,13 +247,38 @@ export default function Contracts() {
 
   // ── FILTERS ───────────────────────────────────────────────────────────────
 
+  const TYPE_SYNONYMS = {
+    auto:   ["auto"],
+    home:   ["home", "habitation"],
+    health: ["health", "sante", "santé"],
+    travel: ["travel", "voyage"],
+    life:   ["life", "vie"],
+  };
+
+  const TYPE_LABELS = {
+    auto:   "assurance auto",
+    home:   "assurance habitation",
+    health: "assurance santé sante",
+    travel: "assurance voyage",
+    life:   "assurance vie",
+  };
+
   const filteredContracts = contracts.filter((c) => {
+    const term = searchTerm.toLowerCase();
+    const typeLabel = TYPE_LABELS[c.type] || c.type;
     const matchesSearch =
-      c.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c._id.toString().includes(searchTerm) ||
-      (c.contractNumber || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "all" || c.status === filterStatus;
-    return matchesSearch && matchesFilter;
+      !term ||
+      c.type.toLowerCase().includes(term) ||
+      typeLabel.includes(term) ||
+      c._id.toString().includes(term) ||
+      (c.contractNumber || "").toLowerCase().includes(term);
+    const matchesStatus = filterStatus === "all" || c.status === filterStatus;
+    const matchesType   = filterType === "all" ||
+      (TYPE_SYNONYMS[filterType] || [filterType]).includes((c.type || "").toLowerCase());
+    const start = c.startDate ? new Date(c.startDate) : null;
+    const matchesFrom = !dateFrom || (start && start >= new Date(dateFrom));
+    const matchesTo   = !dateTo   || (start && start <= new Date(dateTo + "T23:59:59"));
+    return matchesSearch && matchesStatus && matchesType && matchesFrom && matchesTo;
   });
 
   if (loading) {
@@ -277,19 +317,24 @@ export default function Contracts() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Rechercher par type ou numéro..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-gray-700"
+            >
+              <option value="all">Tous les types</option>
+              <option value="auto">Assurance Auto</option>
+              <option value="home">Assurance Habitation</option>
+              <option value="health">Assurance Santé</option>
+              <option value="travel">Assurance Voyage</option>
+              <option value="life">Assurance Vie</option>
+            </select>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-gray-700"
             >
               <option value="all">Tous les statuts</option>
               <option value="en attente">En attente</option>
@@ -297,107 +342,151 @@ export default function Contracts() {
               <option value="refusé">Refusé</option>
               <option value="expiré">Expiré</option>
             </select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap">Du</label>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all" />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap">Au</label>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all" />
+            </div>
           </div>
+          {(filterStatus !== "all" || filterType !== "all" || dateFrom || dateTo) && (
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-500">{filteredContracts.length} contrat{filteredContracts.length !== 1 ? "s" : ""} trouvé{filteredContracts.length !== 1 ? "s" : ""}</p>
+              <button onClick={() => { setFilterStatus("all"); setFilterType("all"); setDateFrom(""); setDateTo(""); }}
+                className="text-xs font-semibold text-[#00a67e] hover:underline">Réinitialiser les filtres</button>
+            </div>
+          )}
         </div>
 
-        {/* Contract cards */}
-        <div className="space-y-4">
-          {filteredContracts.length === 0 ? (
-            <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-600">
-              Aucun contrat trouvé
-            </div>
-          ) : (
-            filteredContracts.map((contract) => (
-              <div
-                key={contract._id}
-                onClick={() => { setSelectedContract(contract); setShowDetailModal(true); }}
-                className={`bg-white rounded-lg shadow-md p-6 border-l-4 cursor-pointer transition-all hover:shadow-lg
-                  ${contract.status === "expiré" || contract.status === "refusé" ? "border-l-red-500 opacity-80" :
-                    contract.status === "en attente" ? "border-l-yellow-400" : "border-l-green-500"}
-                  ${expiresSoon(contract.endDate) ? "bg-yellow-50" : ""}
-                `}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-lg font-bold text-gray-900 capitalize">Contrat {contract.type}</h3>
+        {/* Contract cards — 3-column grid */}
+        {filteredContracts.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 text-center text-gray-500">
+            Aucun contrat trouvé
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredContracts.map((contract) => {
+              const typeConfig = {
+                auto:       { Icon: Car,    color: "from-blue-600 to-blue-800",    light: "bg-blue-50",   text: "text-blue-700",   label: "Assurance Auto" },
+                home:       { Icon: Home,   color: "from-amber-500 to-amber-700",  light: "bg-amber-50",  text: "text-amber-700",  label: "Assurance Habitation" },
+                health:     { Icon: Heart,  color: "from-rose-500 to-rose-700",    light: "bg-rose-50",   text: "text-rose-700",   label: "Assurance Santé" },
+                travel:     { Icon: Plane,  color: "from-sky-500 to-sky-700",      light: "bg-sky-50",    text: "text-sky-700",    label: "Assurance Voyage" },
+                life:       { Icon: Shield, color: "from-emerald-600 to-emerald-800", light: "bg-emerald-50", text: "text-emerald-700", label: "Assurance Vie" },
+              }[contract.type] || { Icon: Shield, color: "from-slate-600 to-slate-800", light: "bg-slate-50", text: "text-slate-700", label: contract.type };
 
-                      {/* Status badge — spinner when pending */}
+              const { Icon } = typeConfig;
+
+              return (
+                <div
+                  key={contract._id}
+                  className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-all ${expiresSoon(contract.endDate) && contract.status === "actif" ? "ring-2 ring-yellow-400" : ""}`}
+                >
+                  {/* Colored header */}
+                  <div className={`bg-gradient-to-r ${typeConfig.color} p-5 flex items-center justify-between`}>
+                    <div>
+                      <p className="text-white/70 text-xs font-medium uppercase tracking-wider mb-0.5">BNA Assurances</p>
+                      <h3 className="text-white font-bold text-base">{typeConfig.label}</h3>
+                      <p className="text-white/60 text-xs mt-1">
+                        N° {contract.contractNumber || `CTR-${String(contract._id).slice(-6).toUpperCase()}`}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 flex-1 flex flex-col gap-3">
+                    {/* Status row */}
+                    <div className="flex items-center justify-between">
                       {contract.status === "en attente" ? (
-                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                          <span className="inline-block w-3 h-3 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                          <span className="w-2.5 h-2.5 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
                           En attente
                         </span>
                       ) : (
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(contract.status)}`}>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(contract.status)}`}>
                           {getContractStatus(contract.status, contract.endDate)}
                         </span>
                       )}
-
-                      {/* Payment badge */}
                       {contract.paymentStatus === "paid" && (
-                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                          ✓ Payé {contract.paymentMethod === "online" ? "(en ligne)" : "(en agence)"}
+                        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Payé
                         </span>
                       )}
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-1">
-                      N° {contract.contractNumber || `CTR-${String(contract._id).slice(-6).toUpperCase()}`}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm mt-3">
-                      <div>
-                        <p className="text-gray-500">Date de début</p>
-                        <p className="font-semibold">{formatDate(contract.startDate)}</p>
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className={`${typeConfig.light} rounded-xl p-2.5`}>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <Calendar className="w-3 h-3 text-gray-400" />
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Début</p>
+                        </div>
+                        <p className={`text-xs font-bold ${typeConfig.text}`}>{formatDate(contract.startDate)}</p>
                       </div>
-                      <div>
-                        <p className="text-gray-500">Date d'expiration</p>
-                        <p className="font-semibold">{formatDate(contract.endDate)}</p>
+                      <div className={`${typeConfig.light} rounded-xl p-2.5`}>
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <Calendar className="w-3 h-3 text-gray-400" />
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Fin</p>
+                        </div>
+                        <p className={`text-xs font-bold ${typeConfig.text}`}>{formatDate(contract.endDate)}</p>
                       </div>
                     </div>
 
-                    {/* Rejection reason */}
+                    {/* Warnings */}
                     {contract.status === "refusé" && contract.rejectionReason && (
-                      <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
-                        <strong>Motif de refus :</strong> {contract.rejectionReason}
-                      </div>
+                      <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                        <strong>Refus :</strong> {contract.rejectionReason}
+                      </p>
                     )}
-
                     {expiresSoon(contract.endDate) && contract.status === "actif" && (
-                      <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm">
-                        ⚠️ Ce contrat expire bientôt. Veuillez le renouveler.
-                      </div>
+                      <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2">
+                        ⚠️ Expire bientôt — pensez à renouveler
+                      </p>
                     )}
-                  </div>
 
-                  {/* Action buttons */}
-                  <div className="flex flex-col gap-2 ml-4 items-end">
-                    {/* Payment button — only when actif and unpaid */}
-                    {contract.status === "actif" && contract.paymentStatus !== "paid" && (
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 mt-auto pt-1">
                       <button
-                        onClick={(e) => openPayment(e, contract)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-all"
+                        onClick={() => { setSelectedContract(contract); setShowDetailModal(true); }}
+                        className="flex-1 text-xs font-semibold py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all"
                       >
-                        <CreditCard className="w-3.5 h-3.5" />
-                        Paiement
+                        Détails
                       </button>
-                    )}
-
-                    {/* Delete button */}
-                    <button
-                      onClick={(e) => handleDelete(e, contract)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      title="Supprimer le contrat"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      {contract.status === "actif" && contract.paymentStatus !== "paid" && (
+                        <button
+                          onClick={(e) => openPayment(e, contract)}
+                          className="flex items-center gap-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" /> Payer
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => downloadContractPdf(contract) || e.stopPropagation()}
+                        className="p-2 text-[#0f2744] hover:text-[#00a67e] hover:bg-slate-50 rounded-xl transition-all"
+                        title="Télécharger PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, contract)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* ── DETAIL MODAL ───────────────────────────────────────────────────── */}
         {showDetailModal && selectedContract && (
@@ -445,6 +534,12 @@ export default function Contracts() {
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  onClick={() => downloadContractPdf(selectedContract)}
+                  className="flex items-center gap-1.5 bg-[#0f2744] hover:bg-[#153356] text-white font-semibold py-2 px-4 rounded-lg"
+                >
+                  <Download className="w-4 h-4" /> Télécharger PDF
+                </button>
                 {selectedContract.status === "actif" && selectedContract.paymentStatus !== "paid" && (
                   <button
                     onClick={(e) => { setShowDetailModal(false); openPayment(e, selectedContract); }}

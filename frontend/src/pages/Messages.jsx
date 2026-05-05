@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import { AuthContext } from "../context/AuthContext";
 import {
   Send, Search, MessageSquare, User, ArrowLeft,
-  RefreshCw, Circle, CheckCheck
+  RefreshCw, Circle, CheckCheck, Trash2
 } from "lucide-react";
 
 function Avatar({ name, avatar, size = "md" }) {
@@ -73,6 +73,7 @@ export default function Messages() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatUser, setNewChatUser] = useState("");
   const [mobileShowThread, setMobileShowThread] = useState(false);
+  const [deletingConv, setDeletingConv] = useState(null);
 
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
@@ -172,6 +173,21 @@ export default function Messages() {
     setNewChatUser("");
   };
 
+  // ── Delete a conversation ─────────────────────────────────────────────────
+  const handleDeleteConversation = async (conv, e) => {
+    e.stopPropagation();
+    if (!window.confirm(`Supprimer la conversation avec ${conv.user.name} ?`)) return;
+    try {
+      await API.delete(`/messages/conversation/${conv.user._id}`);
+      setConversations(prev => prev.filter(c => c.user._id !== conv.user._id));
+      if (activeConv?.user._id === conv.user._id) {
+        setActiveConv(null);
+        setThread([]);
+        setMobileShowThread(false);
+      }
+    } catch (_) { /* silent */ }
+  };
+
   // ── Filtered conversations ────────────────────────────────────────────────
   const filtered = conversations.filter(c => {
     if (!search) return true;
@@ -250,14 +266,14 @@ export default function Messages() {
                 const lastMsg = conv.lastMessage;
                 const isMyLastMsg = getSenderId(lastMsg) === myId;
                 return (
-                  <button
+                  <div
                     key={conv.user._id}
-                    onClick={() => openConversation(conv)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 border-b border-slate-50 text-left transition-all duration-150 ${
+                    className={`group relative flex items-center gap-3 px-4 py-3.5 border-b border-slate-50 cursor-pointer transition-all duration-150 ${
                       isActive
                         ? "bg-[#0f2744]/5 border-l-[3px] border-l-[#0f2744]"
                         : "hover:bg-slate-50 border-l-[3px] border-l-transparent"
                     }`}
+                    onClick={() => openConversation(conv)}
                   >
                     <div className="relative shrink-0">
                       <Avatar name={conv.user.name} avatar={conv.user.avatar} />
@@ -282,7 +298,15 @@ export default function Messages() {
                         )}
                       </div>
                     </div>
-                  </button>
+                    {/* Delete button — visible on hover */}
+                    <button
+                      onClick={(e) => handleDeleteConversation(conv, e)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition-all duration-150"
+                      title="Supprimer la conversation"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 );
               })
             )}

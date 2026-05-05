@@ -3,6 +3,7 @@ import API from "../api/axios";
 import Layout from "../components/Layout";
 import { formatDate, getStatusBadgeColor, truncateText, getSinistreTypeLabel, getVoyageSubTypeLabel, getSanteSubTypeLabel, getBatimentSubTypeLabel } from "../utils/helpers";
 import { AuthContext } from "../context/AuthContext";
+import { Car, Heart, Home, Plane, AlertTriangle, Calendar, FileText, Pencil, Trash2, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
 
 const getFileUrl = (fileUrl = "") => {
   if (!fileUrl) return "#";
@@ -138,7 +139,10 @@ export default function MonSinistre() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSinistreType, setFilterSinistreType] = useState("all");
   const [filterUser, setFilterUser] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo]     = useState("");
 
   useEffect(() => {
     fetchData();
@@ -237,11 +241,16 @@ export default function MonSinistre() {
   const filteredSinistres = sinistres.filter((sinistre) => {
     const matchesSearch =
       (sinistre.description || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sinistre._id.toString().includes(searchTerm);
-    const matchesFilter = filterStatus === "all" || sinistre.status === filterStatus;
+      sinistre._id.toString().includes(searchTerm) ||
+      (sinistre.fullName || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || sinistre.status === filterStatus;
+    const matchesType   = filterSinistreType === "all" || sinistre.sinistreType === filterSinistreType;
     const sinistreUserId = typeof sinistre.userId === "object" ? sinistre.userId._id : sinistre.userId;
     const matchesUser = filterUser === "all" || sinistreUserId === filterUser;
-    return matchesSearch && matchesFilter && matchesUser;
+    const d = sinistre.date ? new Date(sinistre.date) : null;
+    const matchesFrom = !dateFrom || (d && d >= new Date(dateFrom));
+    const matchesTo   = !dateTo   || (d && d <= new Date(dateTo + "T23:59:59"));
+    return matchesSearch && matchesStatus && matchesType && matchesUser && matchesFrom && matchesTo;
   });
 
   const uniqueUsers = [
@@ -568,158 +577,187 @@ export default function MonSinistre() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              type="text"
-              placeholder="Rechercher par description ou ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            >
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <select value={filterSinistreType} onChange={(e) => setFilterSinistreType(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-gray-700">
+              <option value="all">Tous les types</option>
+              <option value="sante">Santé</option>
+              <option value="auto">Auto</option>
+              <option value="batiment">Bâtiment</option>
+              <option value="voyage">Voyage</option>
+            </select>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-gray-700">
               <option value="all">Tous les statuts</option>
               <option value="en attente">En attente</option>
               <option value="accepté">Accepté</option>
               <option value="refusé">Refusé</option>
             </select>
-            {canManage && (
-              <select
-                value={filterUser}
-                onChange={(e) => setFilterUser(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              >
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap">Du</label>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all" />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-gray-400 whitespace-nowrap">Au</label>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all" />
+            </div>
+          </div>
+          {canManage && (
+            <div className="mt-3">
+              <select value={filterUser} onChange={(e) => setFilterUser(e.target.value)}
+                className="w-full sm:w-72 px-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-gray-700">
                 <option value="all">Tous les utilisateurs</option>
                 {uniqueUsers.map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.name} ({u.email})
-                  </option>
+                  <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
                 ))}
               </select>
-            )}
-          </div>
+            </div>
+          )}
+          {(filterStatus !== "all" || filterSinistreType !== "all" || dateFrom || dateTo || filterUser !== "all") && (
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <p className="text-xs text-gray-500">{filteredSinistres.length} sinistre{filteredSinistres.length !== 1 ? "s" : ""} trouvé{filteredSinistres.length !== 1 ? "s" : ""}</p>
+              <button onClick={() => { setFilterStatus("all"); setFilterSinistreType("all"); setDateFrom(""); setDateTo(""); setFilterUser("all"); }}
+                className="text-xs font-semibold text-[#00a67e] hover:underline">Réinitialiser les filtres</button>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredSinistres.length === 0 ? (
-            <div className="col-span-full bg-white rounded-lg shadow-md p-8 text-center">
-              <p className="text-gray-600">Aucun sinistre trouvé</p>
+            <div className="col-span-full bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+              <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+              <p className="text-gray-500 font-medium">Aucun sinistre trouvé</p>
             </div>
           ) : (
             filteredSinistres.map((sinistre) => {
               const uploadCount = getClaimUploads(sinistre).length;
-              const showDeleteAction = canManage || canEditSinistre(sinistre);
               const canDeleteAction = canManage || canDeleteSinistre(sinistre);
+
+              const typeConfig = {
+                auto:     { Icon: Car,           gradient: "from-orange-500 to-red-600",     light: "bg-orange-50",  text: "text-orange-600" },
+                sante:    { Icon: Heart,          gradient: "from-rose-500 to-pink-600",      light: "bg-rose-50",    text: "text-rose-600" },
+                voyage:   { Icon: Plane,          gradient: "from-sky-500 to-blue-600",       light: "bg-sky-50",     text: "text-sky-600" },
+                batiment: { Icon: Home,           gradient: "from-amber-500 to-orange-600",   light: "bg-amber-50",   text: "text-amber-600" },
+              }[sinistre.sinistreType] || { Icon: AlertTriangle, gradient: "from-slate-500 to-slate-700", light: "bg-slate-50", text: "text-slate-600" };
+
+              const { Icon } = typeConfig;
+
+              const statusConfig = {
+                "en attente": { label: "En attente",  Icon: Clock,        cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+                "accepté":    { label: "Accepté",     Icon: CheckCircle,  cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+                "refusé":     { label: "Refusé",      Icon: XCircle,      cls: "bg-red-100 text-red-700 border-red-200" },
+              }[sinistre.status] || { label: sinistre.status, Icon: Clock, cls: "bg-gray-100 text-gray-600 border-gray-200" };
+
+              const StatusIcon = statusConfig.Icon;
+
               return (
-                <div
-                  key={sinistre._id}
-                  className="h-full bg-white rounded-lg shadow-md p-6 border-l-4 border-l-red-500 hover:shadow-lg cursor-pointer transition-all"
-                  onClick={() => {
-                    setSelectedSinistre(sinistre);
-                    setShowDetailModal(true);
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-lg font-bold text-gray-900">Sinistre #{sinistre._id.slice(-6)}</h3>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#e6f7f2] text-[#00664d]">
-                          {getSinistreTypeLabel(sinistre.sinistreType)}
+                <div key={sinistre._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+
+                  {/* Colored header */}
+                  <div className={`bg-gradient-to-r ${typeConfig.gradient} p-5 flex items-center justify-between`}>
+                    <div>
+                      <p className="text-white/70 text-[10px] font-semibold uppercase tracking-widest mb-1">Sinistre BNA</p>
+                      <h3 className="text-white font-bold text-base">{getSinistreTypeLabel(sinistre.sinistreType)}</h3>
+                      <p className="text-white/60 text-xs mt-0.5">Réf. #{sinistre._id.slice(-6).toUpperCase()}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-4 flex-1 flex flex-col gap-3">
+
+                    {/* Status + uploads row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${statusConfig.cls}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {statusConfig.label}
+                      </span>
+                      {uploadCount > 0 && (
+                        <span className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${typeConfig.light} ${typeConfig.text}`}>
+                          <FileText className="w-3 h-3" /> {uploadCount} fichier{uploadCount > 1 ? "s" : ""}
                         </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(sinistre.status)}`}>
-                          {sinistre.status === "en attente" ? "En attente" : sinistre.status === "accepté" ? "Accepté" : "Refusé"}
-                        </span>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                          {uploadCount} upload(s)
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{truncateText(sinistre.description, 80)}</p>
-                      {sinistre.status === "refusé" && sinistre.rejectionReason && (
-                        <div className="mb-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
-                          <span className="font-semibold">Motif de refus :</span> {sinistre.rejectionReason}
-                        </div>
-                      )}
-                      {canManage && sinistre.userId && typeof sinistre.userId === "object" && (
-                        <p className="text-xs text-[#1a365d] mb-1">Utilisateur: {sinistre.userId.name} ({sinistre.userId.email})</p>
-                      )}
-                      <p className="text-xs text-gray-500">Soumis le {formatDate(sinistre.date)}</p>
-                      {canManage && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusUpdate(sinistre._id, "accepté");
-                            }}
-                            disabled={sinistre.status === "accepté"}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                              sinistre.status === "accepté"
-                                ? "bg-green-100 text-green-700 cursor-not-allowed"
-                                : "bg-green-600 text-white hover:bg-green-700"
-                            }`}
-                          >
-                            Accepter
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStatusUpdate(sinistre._id, "refusé");
-                            }}
-                            disabled={sinistre.status === "refusé"}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                              sinistre.status === "refusé"
-                                ? "bg-red-100 text-red-700 cursor-not-allowed"
-                                : "bg-red-600 text-white hover:bg-red-700"
-                            }`}
-                          >
-                            Refuser
-                          </button>
-                        </div>
-                      )}
-                      {canEditSinistre(sinistre) && (
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(sinistre);
-                            }}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00a67e] text-white hover:bg-[#008b69] transition-colors"
-                          >
-                            Modifier
-                          </button>
-                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {showDeleteAction && (
+
+                    {/* Description */}
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                      {sinistre.description || "Aucune description"}
+                    </p>
+
+                    {/* Rejection reason */}
+                    {sinistre.status === "refusé" && sinistre.rejectionReason && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                        <span className="font-semibold">Motif :</span> {sinistre.rejectionReason}
+                      </div>
+                    )}
+
+                    {/* User info (gestionnaire/admin only) */}
+                    {canManage && sinistre.userId && typeof sinistre.userId === "object" && (
+                      <p className="text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-2">
+                        {sinistre.userId.name} — {sinistre.userId.email}
+                      </p>
+                    )}
+
+                    {/* Date */}
+                    <div className={`flex items-center gap-2 ${typeConfig.light} rounded-xl px-3 py-2`}>
+                      <Calendar className={`w-3.5 h-3.5 shrink-0 ${typeConfig.text}`} />
+                      <p className={`text-xs font-semibold ${typeConfig.text}`}>Soumis le {formatDate(sinistre.date)}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 mt-auto pt-1">
+                      <button
+                        onClick={() => { setSelectedSinistre(sinistre); setShowDetailModal(true); }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5" /> Détails
+                      </button>
+
+                      {canManage && (
+                        <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(sinistre._id, "accepté"); }}
+                            disabled={sinistre.status === "accepté"}
+                            className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Accepter"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(sinistre._id, "refusé"); }}
+                            disabled={sinistre.status === "refusé"}
+                            className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Refuser"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+
+                      {canEditSinistre(sinistre) && (
                         <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (canDeleteAction) {
-                              handleDeleteSinistre(sinistre._id);
-                            }
-                          }}
-                          disabled={!canDeleteAction}
-                          className={`p-2 rounded-full transition-colors ${
-                            canDeleteAction
-                              ? "text-red-500 hover:text-red-700 hover:bg-red-50"
-                              : "text-red-300 bg-red-50 cursor-not-allowed"
-                          }`}
-                          title={canDeleteAction ? "Supprimer ce sinistre" : "Suppression possible uniquement si en attente"}
+                          onClick={(e) => { e.stopPropagation(); openEditModal(sinistre); }}
+                          className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all"
+                          title="Modifier"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <Pencil className="w-4 h-4" />
                         </button>
                       )}
-                      <div className="text-3xl">🚨</div>
+
+                      {canDeleteAction && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteSinistre(sinistre._id); }}
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition-all"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -728,159 +766,187 @@ export default function MonSinistre() {
           )}
         </div>
 
-        {showDetailModal && selectedSinistre && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold text-gray-900">Détails du sinistre</h2>
+        {showDetailModal && selectedSinistre && (() => {
+          const tc = {
+            auto:     { Icon: Car,           gradient: "from-orange-500 to-red-600",   light: "bg-orange-50",  border: "border-orange-200", text: "text-orange-600" },
+            sante:    { Icon: Heart,          gradient: "from-rose-500 to-pink-600",    light: "bg-rose-50",    border: "border-rose-200",   text: "text-rose-600" },
+            voyage:   { Icon: Plane,          gradient: "from-sky-500 to-blue-600",     light: "bg-sky-50",     border: "border-sky-200",    text: "text-sky-600" },
+            batiment: { Icon: Home,           gradient: "from-amber-500 to-orange-600", light: "bg-amber-50",   border: "border-amber-200",  text: "text-amber-600" },
+          }[selectedSinistre.sinistreType] || { Icon: AlertTriangle, gradient: "from-slate-500 to-slate-700", light: "bg-slate-50", border: "border-slate-200", text: "text-slate-600" };
+          const TypeIcon = tc.Icon;
+          const uploads = getClaimUploads(selectedSinistre);
+          const sc = {
+            "en attente": { label: "En attente",  Icon: Clock,        cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+            "accepté":    { label: "Accepté",     Icon: CheckCircle,  cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+            "refusé":     { label: "Refusé",      Icon: XCircle,      cls: "bg-red-100 text-red-700 border-red-200" },
+          }[selectedSinistre.status] || { label: selectedSinistre.status, Icon: Clock, cls: "bg-gray-100 text-gray-600 border-gray-200" };
+          const StatusIcon = sc.Icon;
 
-              <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
-                <div>
-                  <p className="text-gray-600 text-sm">ID du sinistre</p>
-                  <p className="font-semibold text-gray-900">{selectedSinistre._id}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Type de sinistre</p>
-                  <p className="font-semibold text-gray-900">{getSinistreTypeLabel(selectedSinistre.sinistreType)}</p>
-                </div>
-                {selectedSinistre.sinistreType === "voyage" && selectedSinistre.voyageSubType && (
-                  <div>
-                    <p className="text-gray-600 text-sm">Sous-type voyage</p>
-                    <p className="font-semibold text-sky-700">{getVoyageSubTypeLabel(selectedSinistre.voyageSubType)}</p>
-                  </div>
-                )}
-                {selectedSinistre.sinistreType === "sante" && selectedSinistre.santeSubType && (
-                  <div>
-                    <p className="text-gray-600 text-sm">Sous-type santé</p>
-                    <p className="font-semibold text-rose-600">{getSanteSubTypeLabel(selectedSinistre.santeSubType)}</p>
-                  </div>
-                )}
-                {selectedSinistre.sinistreType === "batiment" && selectedSinistre.batimentSubType && (
-                  <div>
-                    <p className="text-gray-600 text-sm">Sous-type bâtiment</p>
-                    <p className="font-semibold text-emerald-700">{getBatimentSubTypeLabel(selectedSinistre.batimentSubType)}</p>
-                  </div>
-                )}
-                {selectedSinistre.sinistreType === "batiment" && selectedSinistre.numeroPoliceBatiment && (
-                  <div>
-                    <p className="text-gray-600 text-sm">N° de police d&apos;assurance</p>
-                    <p className="font-semibold text-gray-900">{selectedSinistre.numeroPoliceBatiment}</p>
-                  </div>
-                )}
-                {selectedSinistre.fullName && (
-                  <div>
-                    <p className="text-gray-600 text-sm">Nom</p>
-                    <p className="font-semibold text-gray-900">{selectedSinistre.fullName}</p>
-                  </div>
-                )}
-                {selectedSinistre.gsm && (
-                  <div>
-                    <p className="text-gray-600 text-sm">GSM</p>
-                    <p className="font-semibold text-gray-900">{selectedSinistre.gsm}</p>
-                  </div>
-                )}
-                {selectedSinistre.immatriculation && (
-                  <div>
-                    <p className="text-gray-600 text-sm">Immatriculation</p>
-                    <p className="font-semibold text-gray-900">{selectedSinistre.immatriculation}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-gray-600 text-sm">Description</p>
-                  <p className="font-semibold text-gray-900">{selectedSinistre.description}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Statut</p>
-                  <p className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeColor(selectedSinistre.status)}`}>
-                    {selectedSinistre.status === "en attente" ? "En attente" : selectedSinistre.status === "accepté" ? "Accepté" : "Refusé"}
-                  </p>
-                </div>
-                {selectedSinistre.status === "refusé" && selectedSinistre.rejectionReason && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                    <p className="font-semibold mb-1">Motif de refus :</p>
-                    <p>{selectedSinistre.rejectionReason}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-gray-600 text-sm">Date de soumission</p>
-                  <p className="font-semibold text-gray-900">{formatDate(selectedSinistre.date)}</p>
-                </div>
-              </div>
+          return (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Uploads du sinistre</h3>
-                {getClaimUploads(selectedSinistre).length === 0 ? (
-                  <p className="text-sm text-gray-600">Aucun upload pour ce sinistre.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {getClaimUploads(selectedSinistre).map((upload) => (
-                      <button
-                        key={upload.id}
-                        onClick={() => setPreviewUpload(upload)}
-                        className="w-full flex items-center gap-3 p-3 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors text-left"
-                      >
-                        <span className="text-xl shrink-0">{getFileIcon(getFileName(upload.fileUrl))}</span>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-blue-700 truncate">{upload.label}</p>
-                          <p className="text-xs text-gray-400 truncate">{getCleanFileName(upload.fileUrl)}{upload.createdAt ? ` • ${formatDate(upload.createdAt)}` : ""}</p>
+                {/* Header */}
+                <div className={`bg-gradient-to-r ${tc.gradient} p-6 shrink-0`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                        <TypeIcon className="w-7 h-7 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-1">Déclaration de sinistre</p>
+                        <h2 className="text-white font-bold text-xl">{getSinistreTypeLabel(selectedSinistre.sinistreType)}</h2>
+                        <p className="text-white/60 text-sm mt-0.5">Réf. #{selectedSinistre._id.slice(-6).toUpperCase()}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setShowDetailModal(false); setSelectedSinistre(null); }}
+                      className="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-all shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Status pill in header */}
+                  <div className="mt-4">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border bg-white/15 text-white border-white/30`}>
+                      <StatusIcon className="w-3.5 h-3.5" /> {sc.label}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Scrollable body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+
+                  {/* Rejection banner */}
+                  {selectedSinistre.status === "refusé" && selectedSinistre.rejectionReason && (
+                    <div className="flex gap-3 bg-red-50 border border-red-200 rounded-2xl p-4">
+                      <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-red-700 mb-0.5">Motif de refus</p>
+                        <p className="text-sm text-red-600">{selectedSinistre.rejectionReason}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info grid */}
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Informations</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "Type", value: getSinistreTypeLabel(selectedSinistre.sinistreType) },
+                        { label: "Date", value: formatDate(selectedSinistre.date) },
+                        selectedSinistre.fullName   && { label: "Nom",              value: selectedSinistre.fullName },
+                        selectedSinistre.gsm        && { label: "GSM",              value: selectedSinistre.gsm },
+                        selectedSinistre.immatriculation && { label: "Immatriculation", value: selectedSinistre.immatriculation },
+                        selectedSinistre.sinistreType === "voyage" && selectedSinistre.voyageSubType   && { label: "Sous-type", value: getVoyageSubTypeLabel(selectedSinistre.voyageSubType) },
+                        selectedSinistre.sinistreType === "sante"  && selectedSinistre.santeSubType    && { label: "Sous-type", value: getSanteSubTypeLabel(selectedSinistre.santeSubType) },
+                        selectedSinistre.sinistreType === "batiment" && selectedSinistre.batimentSubType && { label: "Sous-type", value: getBatimentSubTypeLabel(selectedSinistre.batimentSubType) },
+                        selectedSinistre.numeroPoliceBatiment && { label: "N° police", value: selectedSinistre.numeroPoliceBatiment },
+                        canManage && selectedSinistre.userId && typeof selectedSinistre.userId === "object" && { label: "Client", value: `${selectedSinistre.userId.name} (${selectedSinistre.userId.email})` },
+                      ].filter(Boolean).map((item, i) => (
+                        <div key={i} className={`${tc.light} rounded-xl p-3`}>
+                          <p className={`text-[10px] font-semibold uppercase tracking-wide mb-0.5 ${tc.text}`}>{item.label}</p>
+                          <p className="text-sm font-bold text-slate-800 truncate">{item.value}</p>
                         </div>
-                        <span className="ml-auto text-xs font-semibold text-blue-600 shrink-0">👁️ Aperçu</span>
-                      </button>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
 
-              {canManage && (
-                <div className="flex gap-2">
-                  <select
-                    value={selectedSinistre.status}
-                    onChange={(e) => handleStatusUpdate(selectedSinistre._id, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="en attente">En attente</option>
-                    <option value="accepté">Accepté</option>
-                    <option value="refusé">Refusé</option>
-                  </select>
+                  {/* Description */}
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</p>
+                    <div className={`${tc.light} ${tc.border} border rounded-2xl p-4`}>
+                      <p className="text-sm text-slate-700 leading-relaxed">{selectedSinistre.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Documents joints</p>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${tc.light} ${tc.text}`}>{uploads.length} fichier{uploads.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    {uploads.length === 0 ? (
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">
+                        <FileText className="w-8 h-8 mx-auto mb-2 text-slate-200" />
+                        <p className="text-sm text-slate-400">Aucun document joint</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {uploads.map((upload) => (
+                          <button
+                            key={upload.id}
+                            onClick={() => setPreviewUpload(upload)}
+                            className={`w-full flex items-center gap-3 p-3.5 bg-white border ${tc.border} rounded-xl hover:${tc.light} transition-all text-left group`}
+                          >
+                            <div className={`w-9 h-9 rounded-xl ${tc.light} flex items-center justify-center shrink-0 text-lg`}>
+                              {getFileIcon(getFileName(upload.fileUrl))}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-sm font-semibold ${tc.text} truncate`}>{upload.label}</p>
+                              <p className="text-xs text-slate-400 truncate">{getCleanFileName(upload.fileUrl)}</p>
+                            </div>
+                            <Eye className={`w-4 h-4 ${tc.text} opacity-0 group-hover:opacity-100 shrink-0 transition-opacity`} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gestionnaire status change */}
+                  {canManage && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Changer le statut</p>
+                      <div className="flex gap-2">
+                        {["en attente", "accepté", "refusé"].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => handleStatusUpdate(selectedSinistre._id, s)}
+                            disabled={selectedSinistre.status === s}
+                            className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                              s === "accepté" ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" :
+                              s === "refusé"  ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" :
+                                               "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                            }`}
+                          >
+                            {s === "accepté" ? "✓ Accepter" : s === "refusé" ? "✗ Refuser" : "⏳ En attente"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer actions */}
+                <div className="shrink-0 p-5 border-t border-slate-100 flex gap-3">
+                  {canEditSinistre(selectedSinistre) && (
+                    <button
+                      onClick={() => openEditModal(selectedSinistre)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-[#00a67e] hover:bg-[#008b69] text-white text-sm font-bold rounded-xl transition-all"
+                    >
+                      <Pencil className="w-4 h-4" /> Modifier
+                    </button>
+                  )}
+                  {(canManage || canDeleteSinistre(selectedSinistre)) && (
+                    <button
+                      onClick={() => handleDeleteSinistre(selectedSinistre._id)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-xl border border-red-200 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" /> Supprimer
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleDeleteSinistre(selectedSinistre._id)}
-                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                    onClick={() => { setShowDetailModal(false); setSelectedSinistre(null); }}
+                    className="ml-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all"
                   >
-                    Supprimer
+                    Fermer
                   </button>
                 </div>
-              )}
-
-              {canDeleteSinistre(selectedSinistre) && (
-                <button
-                  onClick={() => handleDeleteSinistre(selectedSinistre._id)}
-                  className="w-full flex items-center justify-center gap-2 bg-red-100 text-red-700 hover:bg-red-200 font-semibold py-2 px-4 rounded-lg transition-all"
-                >
-                  <span className="text-lg">🗑️</span>
-                  Supprimer ma declaration
-                </button>
-              )}
-
-              {canEditSinistre(selectedSinistre) && (
-                <button
-                  onClick={() => openEditModal(selectedSinistre)}
-                  className="w-full bg-[#00a67e] hover:bg-[#008b69] text-white font-semibold py-2 px-4 rounded-lg transition-all"
-                >
-                  Modifier ma déclaration
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedSinistre(null);
-                }}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-900 font-semibold py-2 px-4 rounded-lg transition-all"
-              >
-                Fermer
-              </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── File Preview Modal ── */}
         {previewUpload && (
@@ -964,458 +1030,394 @@ export default function MonSinistre() {
         )}
 
         {showEditModal && selectedSinistre && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[92vh] flex flex-col">
-              <div className="bg-gradient-to-r from-[#0f2744] to-[#1a365d] px-6 py-5 text-white">
-                <p className="text-xs uppercase tracking-[0.2em] text-blue-200/80">Modification du sinistre</p>
-                <h2 className="text-2xl font-bold mt-1">Mettre à jour la déclaration</h2>
-                <p className="text-sm text-blue-100/80 mt-2">Modifiez les informations principales et remplacez les fichiers si nécessaire.</p>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[92vh] flex flex-col">
+
+              {/* Header */}
+              <div className="bg-gradient-to-r from-[#0f2744] to-[#1a3a5c] px-7 py-6 text-white shrink-0">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                      <Pencil className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-widest text-blue-200/70 mb-0.5">Modification</p>
+                      <h2 className="text-xl font-bold text-white">Mettre à jour la déclaration</h2>
+                      <p className="text-xs text-blue-200/60 mt-0.5">Réf. #{selectedSinistre._id.slice(-6).toUpperCase()} — {getSinistreTypeLabel(selectedSinistre.sinistreType)}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all shrink-0 mt-0.5"
+                  >✕</button>
+                </div>
               </div>
-              <form onSubmit={handleEditSubmit} className="p-6 space-y-6 overflow-y-auto">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Type de sinistre</label>
-                    <select
-                      value={editForm.sinistreType}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, sinistreType: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    >
-                      <option value="">— Choisir un type —</option>
-                      {SINISTRE_TYPE_OPTIONS.map((type) => (
-                        <option key={type} value={type}>
-                          {getSinistreTypeLabel(type)}
-                        </option>
+              <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto">
+                <div className="p-7 space-y-7">
+
+                  {/* ── Section: Informations générales ── */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-[#0f2744] flex items-center justify-center shrink-0">
+                        <FileText className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Informations générales</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Type de sinistre</label>
+                        <select
+                          value={editForm.sinistreType}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, sinistreType: e.target.value }))}
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm font-medium text-slate-800"
+                        >
+                          <option value="">— Choisir un type —</option>
+                          {SINISTRE_TYPE_OPTIONS.map((type) => (
+                            <option key={type} value={type}>{getSinistreTypeLabel(type)}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Date du sinistre</label>
+                        <input
+                          type="date"
+                          value={editForm.date}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm font-medium text-slate-800"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Contrat concerné</label>
+                        <select
+                          required
+                          value={editForm.contractId}
+                          onChange={(e) => setEditForm((prev) => ({ ...prev, contractId: e.target.value }))}
+                          className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm font-medium text-slate-800"
+                        >
+                          <option value="">— Choisir un contrat —</option>
+                          {contractOptions.map((c) => (
+                            <option key={c._id} value={c._id}>{formatContractLabel(c)}</option>
+                          ))}
+                        </select>
+                        {contracts.length === 0 && editForm.contractId && (
+                          <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">⚠ Contrat actuel conservé (liste indisponible)</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Section: Coordonnées ── */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-[#00a67e] flex items-center justify-center shrink-0">
+                        <span className="text-white text-xs font-bold">✦</span>
+                      </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Coordonnées du déclarant</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { key: "fullName",   label: "Nom complet",   type: "text",  val: editForm.fullName },
+                        { key: "cinNumber",  label: "Numéro CIN",    type: "text",  val: editForm.cinNumber },
+                        { key: "email",      label: "Email",         type: "email", val: editForm.email },
+                        { key: "gsm",        label: "GSM",           type: "text",  val: editForm.gsm },
+                      ].map(({ key, label, type, val }) => (
+                        <div key={key}>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+                          <input
+                            type={type}
+                            value={val}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm"
+                          />
+                        </div>
                       ))}
-                    </select>
+                      {showImmatriculationField && (
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Immatriculation</label>
+                          <input
+                            type="text"
+                            value={editForm.immatriculation}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, immatriculation: e.target.value.toUpperCase() }))}
+                            className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm font-mono tracking-widest"
+                            placeholder="Ex: 123 TUN 4567"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Date</label>
-                    <input
-                      type="date"
-                      value={editForm.date}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, date: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
+                  {/* ── Section: Description ── */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-slate-700 flex items-center justify-center shrink-0">
+                        <span className="text-white text-xs font-bold">✎</span>
+                      </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Description</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+                    <textarea
+                      rows={4}
+                      required
+                      value={editForm.description}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Décrivez les circonstances du sinistre..."
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm resize-none"
                     />
                   </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Contrat concerné</label>
-                  <select
-                    required
-                    value={editForm.contractId}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, contractId: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                  >
-                    <option value="">— Choisir un contrat —</option>
-                    {contractOptions.map((contract) => (
-                      <option key={contract._id} value={contract._id}>
-                        {formatContractLabel(contract)}
-                      </option>
-                    ))}
-                  </select>
-                  {contracts.length === 0 && editForm.contractId && (
-                    <p className="text-xs text-amber-700 mt-2">Contrat actuel conservé (liste indisponible).</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Nom</label>
-                    <input
-                      type="text"
-                      value={editForm.fullName}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">CIN</label>
-                    <input
-                      type="text"
-                      value={editForm.cinNumber}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, cinNumber: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    />
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">GSM</label>
-                    <input
-                      type="text"
-                      value={editForm.gsm}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, gsm: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    />
-                  </div>
-                </div>
-
-                {showImmatriculationField && (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-sm font-semibold text-gray-900 mb-2">Immatriculation</label>
-                    <input
-                      type="text"
-                      value={editForm.immatriculation}
-                      onChange={(e) =>
-                        setEditForm((prev) => ({ ...prev, immatriculation: e.target.value.toUpperCase() }))
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                    />
-                  </div>
-                )}
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Description</label>
-                  <textarea
-                    rows={5}
-                    required
-                    value={editForm.description}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e]"
-                  />
-                </div>
 
                 {/* Auto file fields */}
                 {editForm.sinistreType === "auto" && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { key: "attestationTiers", label: "Attestation du tiers" },
-                      { key: "constat", label: "Constat" },
-                      { key: "photoVehicule", label: "Photo du véhicule" }
-                    ].map((f) => (
-                      <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                        <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                        {selectedSinistre?.files?.[f.key] && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })}
-                            className="text-xs text-sky-600 underline mb-2 block"
-                          >
-                            Voir le fichier actuel
-                          </button>
-                        )}
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))}
-                          className="w-full text-sm"
-                        />
-                        {editForm.files[f.key] && (
-                          <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>
-                        )}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center shrink-0">
+                        <Car className="w-3.5 h-3.5 text-white" />
                       </div>
-                    ))}
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Documents Auto</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { key: "attestationTiers", label: "Attestation du tiers" },
+                        { key: "constat",          label: "Constat amiable" },
+                        { key: "photoVehicule",    label: "Photo du véhicule" }
+                      ].map((f) => (
+                        <div key={f.key} className="rounded-2xl border-2 border-dashed border-orange-200 bg-orange-50/40 p-4 flex flex-col gap-2">
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && (
+                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })}
+                              className="flex items-center gap-1.5 text-xs text-sky-600 hover:text-sky-700 font-medium">
+                              <Eye className="w-3 h-3" /> Voir fichier actuel
+                            </button>
+                          )}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))}
+                            className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white hover:file:bg-[#1a3a5c] cursor-pointer" />
+                          {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
                 {/* Santé file fields */}
                 {editForm.sinistreType === "sante" && (
-                  <>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type santé</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {[
-                          { id: "medicaments_examens", label: "Médicaments / Examens" },
-                          { id: "hospitalisation", label: "Hospitalisation" }
-                        ].map((opt) => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => setEditForm((prev) => ({ ...prev, santeSubType: opt.id }))}
-                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                              editForm.santeSubType === opt.id
-                                ? "border-[#00a67e] bg-rose-50 text-[#00a67e]"
-                                : "border-slate-200 text-slate-700 hover:border-slate-300"
-                            }`}
-                          >
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500 flex items-center justify-center shrink-0">
+                        <Heart className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Documents Santé</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Sous-type santé</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[{ id: "medicaments_examens", label: "Médicaments / Examens" }, { id: "hospitalisation", label: "Hospitalisation" }].map((opt) => (
+                          <button key={opt.id} type="button" onClick={() => setEditForm((prev) => ({ ...prev, santeSubType: opt.id }))}
+                            className={`py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all ${editForm.santeSubType === opt.id ? "border-rose-400 bg-rose-50 text-rose-700" : "border-slate-200 text-slate-600 hover:border-rose-200 hover:bg-rose-50/40"}`}>
                             {opt.label}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Base documents */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        { key: "feuilleSoins",       label: "Feuille de soins" },
-                        { key: "rapportMedical",      label: "Rapport / certificat médical" },
-                        { key: "facturesOriginales",  label: "Factures originales" }
-                      ].map((f) => (
-                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                          {selectedSinistre?.files?.[f.key] && (
-                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                          )}
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                      {[{ key: "feuilleSoins", label: "Feuille de soins" }, { key: "rapportMedical", label: "Rapport médical" }, { key: "facturesOriginales", label: "Factures originales" }].map((f) => (
+                        <div key={f.key} className="rounded-2xl border-2 border-dashed border-rose-200 bg-rose-50/30 p-4 flex flex-col gap-2">
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1.5 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                          {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
                         </div>
                       ))}
                     </div>
 
-                    {/* Conditional documents */}
                     {editForm.santeSubType === "medicaments_examens" && (
-                      <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-rose-700 mb-3">Documents — Médicaments / Examens</p>
+                      <div className="border border-rose-200 bg-rose-50/40 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-rose-600 uppercase tracking-wide mb-3">Médicaments / Examens</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {[
-                            { key: "facturesPharmacie",  label: "Factures de pharmacie" },
-                            { key: "resultatsAnalyses",  label: "Résultats d'analyses / radios / scanner" },
-                            { key: "prescription",       label: "Prescription correspondante" }
-                          ].map((f) => (
-                            <div key={f.key} className="rounded-2xl border border-dashed border-rose-200 bg-white p-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                              {selectedSinistre?.files?.[f.key] && (
-                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                              )}
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                          {[{ key: "facturesPharmacie", label: "Factures pharmacie" }, { key: "resultatsAnalyses", label: "Résultats d'analyses" }, { key: "prescription", label: "Prescription" }].map((f) => (
+                            <div key={f.key} className="rounded-xl border-2 border-dashed border-rose-200 bg-white p-3 flex flex-col gap-2">
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                              {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-
                     {editForm.santeSubType === "hospitalisation" && (
-                      <div className="border border-rose-200 bg-rose-50/40 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-rose-700 mb-3">Documents — Hospitalisation</p>
+                      <div className="border border-rose-200 bg-rose-50/40 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-rose-600 uppercase tracking-wide mb-3">Hospitalisation</p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {[
-                            { key: "bulletinHospitalisation",    label: "Bulletin d'hospitalisation" },
-                            { key: "factureClinic",              label: "Facture de la clinique / hôpital" },
-                            { key: "compteRenduHospitalisation", label: "Compte rendu d'hospitalisation" }
-                          ].map((f) => (
-                            <div key={f.key} className="rounded-2xl border border-dashed border-rose-200 bg-white p-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                              {selectedSinistre?.files?.[f.key] && (
-                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                              )}
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
+                          {[{ key: "bulletinHospitalisation", label: "Bulletin d'hospitalisation" }, { key: "factureClinic", label: "Facture clinique" }, { key: "compteRenduHospitalisation", label: "Compte rendu" }].map((f) => (
+                            <div key={f.key} className="rounded-xl border-2 border-dashed border-rose-200 bg-white p-3 flex flex-col gap-2">
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                              {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
 
                 {/* Bâtiment file fields */}
                 {editForm.sinistreType === "batiment" && (
-                  <>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type bâtiment</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                          { id: "degats_eaux",   label: "Dégâts des eaux" },
-                          { id: "incendie",      label: "Incendie" },
-                          { id: "gros_sinistre", label: "Gros sinistre" }
-                        ].map((opt) => (
-                          <button key={opt.id} type="button"
-                            onClick={() => setEditForm((prev) => ({ ...prev, batimentSubType: opt.id }))}
-                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                              editForm.batimentSubType === opt.id
-                                ? "border-[#00a67e] bg-emerald-50 text-[#00a67e]"
-                                : "border-slate-200 text-slate-700 hover:border-slate-300"
-                            }`}
-                          >{opt.label}</button>
-                        ))}
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+                        <Home className="w-3.5 h-3.5 text-white" />
                       </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Documents Bâtiment</p>
+                      <div className="flex-1 h-px bg-slate-100" />
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Numéro de police d&apos;assurance</label>
-                      <input type="text" value={editForm.numeroPoliceBatiment}
-                        onChange={(e) => setEditForm((prev) => ({ ...prev, numeroPoliceBatiment: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a67e] bg-white"
-                        placeholder="Ex : POL-2024-XXXXXX"
-                      />
-                    </div>
-
-                    {/* Base docs */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        { key: "carteIdentiteBatiment",      label: "Carte d'identité" },
-                        { key: "contratAssuranceHabitation", label: "Contrat d'assurance habitation" },
-                        { key: "declarationEcriteBatiment",  label: "Déclaration écrite" }
-                      ].map((f) => (
-                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                          {selectedSinistre?.files?.[f.key] && (
-                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                          )}
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { key: "photosDegats",       label: "Photos des dégâts" },
-                        { key: "listeBiensDommages", label: "Liste des biens endommagés" }
-                      ].map((f) => (
-                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                          {selectedSinistre?.files?.[f.key] && (
-                            <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                          )}
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                          {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Conditional docs */}
-                    {editForm.batimentSubType === "degats_eaux" && (
-                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Dégâts des eaux</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { key: "constatAmiableEaux",   label: "Constat amiable dégâts des eaux" },
-                            { key: "coordonneesImpliques", label: "Coordonnées des personnes impliquées" }
-                          ].map((f) => (
-                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                              {selectedSinistre?.files?.[f.key] && (
-                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                              )}
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {editForm.batimentSubType === "incendie" && (
-                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Incendie</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { key: "rapportProtectionCivile", label: "Rapport protection civile / police" },
-                            { key: "preuveIntervention",      label: "Preuve de l'intervention" }
-                          ].map((f) => (
-                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                              {selectedSinistre?.files?.[f.key] && (
-                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                              )}
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {editForm.batimentSubType === "gros_sinistre" && (
-                      <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-emerald-700 mb-3">Documents — Gros sinistre</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {[
-                            { key: "rapportExpert",  label: "Rapport d'expert" },
-                            { key: "titrePropriete", label: "Titre de propriété / contrat de location" }
-                          ].map((f) => (
-                            <div key={f.key} className="rounded-2xl border border-dashed border-emerald-200 bg-white p-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                              {selectedSinistre?.files?.[f.key] && (
-                                <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="text-xs text-sky-600 underline mb-2 block">Voir le fichier actuel</button>
-                              )}
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-sm" />
-                              {editForm.files[f.key] && <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Voyage file fields */}
-                {editForm.sinistreType === "voyage" && (
-                  <>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">Sous-type voyage</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                          { id: "medical_etranger", label: "Médical à l'étranger" },
-                          { id: "retard_annulation_vol", label: "Retard ou annulation de vol" },
-                          { id: "perte_vol_bagages", label: "Perte ou vol de bagages" }
-                        ].map((opt) => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => setEditForm((prev) => ({ ...prev, voyageSubType: opt.id }))}
-                            className={`text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
-                              editForm.voyageSubType === opt.id
-                                ? "border-[#00a67e] bg-sky-50 text-[#00a67e]"
-                                : "border-slate-200 text-slate-700 hover:border-slate-300"
-                            }`}
-                          >
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Sous-type bâtiment</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[{ id: "degats_eaux", label: "Dégâts des eaux" }, { id: "incendie", label: "Incendie" }, { id: "gros_sinistre", label: "Gros sinistre" }].map((opt) => (
+                          <button key={opt.id} type="button" onClick={() => setEditForm((prev) => ({ ...prev, batimentSubType: opt.id }))}
+                            className={`py-3 px-3 rounded-xl border-2 text-xs font-semibold transition-all text-center ${editForm.batimentSubType === opt.id ? "border-amber-400 bg-amber-50 text-amber-700" : "border-slate-200 text-slate-600 hover:border-amber-200 hover:bg-amber-50/40"}`}>
                             {opt.label}
                           </button>
                         ))}
                       </div>
                     </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">N° de police d'assurance</label>
+                      <input type="text" value={editForm.numeroPoliceBatiment} onChange={(e) => setEditForm((prev) => ({ ...prev, numeroPoliceBatiment: e.target.value }))}
+                        className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-[#00a67e] focus:ring-2 focus:ring-[#00a67e]/20 outline-none transition-all text-sm"
+                        placeholder="Ex: POL-2024-XXXXXX" />
+                    </div>
+
+                    {[{ key: "carteIdentiteBatiment", label: "Carte d'identité" }, { key: "contratAssuranceHabitation", label: "Contrat assurance habitation" }, { key: "declarationEcriteBatiment", label: "Déclaration écrite" }, { key: "photosDegats", label: "Photos des dégâts" }, { key: "listeBiensDommages", label: "Liste biens endommagés" }].length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[{ key: "carteIdentiteBatiment", label: "Carte d'identité" }, { key: "contratAssuranceHabitation", label: "Contrat habitation" }, { key: "declarationEcriteBatiment", label: "Déclaration écrite" }, { key: "photosDegats", label: "Photos des dégâts" }, { key: "listeBiensDommages", label: "Liste biens endommagés" }].map((f) => (
+                          <div key={f.key} className="rounded-2xl border-2 border-dashed border-amber-200 bg-amber-50/30 p-4 flex flex-col gap-2">
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                            {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                            <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                            {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {editForm.batimentSubType === "degats_eaux" && (
+                      <div className="border border-amber-200 bg-amber-50/40 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-3">Dégâts des eaux</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[{ key: "constatAmiableEaux", label: "Constat amiable" }, { key: "coordonneesImpliques", label: "Coordonnées impliqués" }].map((f) => (
+                            <div key={f.key} className="rounded-xl border-2 border-dashed border-amber-200 bg-white p-3 flex flex-col gap-2">
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                              {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editForm.batimentSubType === "incendie" && (
+                      <div className="border border-amber-200 bg-amber-50/40 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-3">Incendie</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[{ key: "rapportProtectionCivile", label: "Rapport protection civile" }, { key: "preuveIntervention", label: "Preuve d'intervention" }].map((f) => (
+                            <div key={f.key} className="rounded-xl border-2 border-dashed border-amber-200 bg-white p-3 flex flex-col gap-2">
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                              {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editForm.batimentSubType === "gros_sinistre" && (
+                      <div className="border border-amber-200 bg-amber-50/40 rounded-2xl p-4">
+                        <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-3">Gros sinistre</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          {[{ key: "rapportExpert", label: "Rapport d'expert" }, { key: "titrePropriete", label: "Titre de propriété" }].map((f) => (
+                            <div key={f.key} className="rounded-xl border-2 border-dashed border-amber-200 bg-white p-3 flex flex-col gap-2">
+                              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                              {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                              {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Voyage file fields */}
+                {editForm.sinistreType === "voyage" && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center shrink-0">
+                        <Plane className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <p className="text-sm font-bold text-[#0f2744] uppercase tracking-wider">Documents Voyage</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Sous-type voyage</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[{ id: "medical_etranger", label: "Médical à l'étranger" }, { id: "retard_annulation_vol", label: "Retard / annulation" }, { id: "perte_vol_bagages", label: "Perte / vol bagages" }].map((opt) => (
+                          <button key={opt.id} type="button" onClick={() => setEditForm((prev) => ({ ...prev, voyageSubType: opt.id }))}
+                            className={`py-3 px-4 rounded-xl border-2 text-xs font-semibold transition-all text-center ${editForm.voyageSubType === opt.id ? "border-sky-400 bg-sky-50 text-sky-700" : "border-slate-200 text-slate-600 hover:border-sky-200 hover:bg-sky-50/40"}`}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        { key: "cinPasseport", label: "CIN / Passeport" },
-                        { key: "policeAssurance", label: "Police d'assurance voyage" },
-                        { key: "billetsAvion", label: "Billets d'avion + carte d'embarquement" },
-                        { key: "preuveReservation", label: "Preuve de réservation (hôtel, agence…)" }
-                      ].map((f) => (
-                        <div key={f.key} className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{f.label}</p>
-                          {selectedSinistre?.files?.[f.key] && (
-                            <button
-                              type="button"
-                              onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })}
-                              className="text-xs text-sky-600 underline mb-2 block"
-                            >
-                              Voir le fichier actuel
-                            </button>
-                          )}
-                          <input
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))}
-                            className="w-full text-sm"
-                          />
-                          {editForm.files[f.key] && (
-                            <p className="text-xs text-green-600 mt-1">✓ {editForm.files[f.key].name}</p>
-                          )}
+                      {[{ key: "cinPasseport", label: "CIN / Passeport" }, { key: "policeAssurance", label: "Police d'assurance voyage" }, { key: "billetsAvion", label: "Billets d'avion + embarquement" }, { key: "preuveReservation", label: "Preuve de réservation" }].map((f) => (
+                        <div key={f.key} className="rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/30 p-4 flex flex-col gap-2">
+                          <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">{f.label}</p>
+                          {selectedSinistre?.files?.[f.key] && <button type="button" onClick={() => setPreviewUpload({ id: f.key, label: f.label, fileUrl: selectedSinistre.files[f.key] })} className="flex items-center gap-1.5 text-xs text-sky-600 font-medium"><Eye className="w-3 h-3" /> Voir actuel</button>}
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setEditForm((prev) => ({ ...prev, files: { ...prev.files, [f.key]: e.target.files?.[0] || null } }))} className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#0f2744] file:text-white cursor-pointer" />
+                          {editForm.files[f.key] && <p className="text-xs text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {editForm.files[f.key].name}</p>}
                         </div>
                       ))}
                     </div>
-                  </>
+                  </div>
                 )}
 
-                <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
+                </div>{/* end p-7 */}
+
+                {/* Pinned footer */}
+                <div className="shrink-0 px-7 py-5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-all"
+                    className="px-6 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-sm transition-all"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={savingEdit}
-                    className="px-6 py-3 rounded-xl bg-[#00a67e] hover:bg-[#008b69] disabled:opacity-60 text-white font-semibold transition-all"
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#00a67e] hover:bg-[#008b69] disabled:opacity-60 text-white font-semibold text-sm transition-all shadow-lg shadow-[#00a67e]/20"
                   >
-                    {savingEdit ? "Enregistrement..." : "Enregistrer les modifications"}
+                    {savingEdit
+                      ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enregistrement...</>
+                      : <><CheckCircle className="w-4 h-4" /> Enregistrer</>
+                    }
                   </button>
                 </div>
               </form>

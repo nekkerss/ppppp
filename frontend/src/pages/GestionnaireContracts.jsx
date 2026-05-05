@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
 import Layout from "../components/Layout";
+import { AuthContext } from "../context/AuthContext";
 import { formatDate, getStatusBadgeColor, getContractStatus } from "../utils/helpers";
 import {
   CheckCircle2, XCircle, Clock, Search, RefreshCw, ChevronRight,
   FileText, Calendar, User, Phone, MapPin, CreditCard, X, Shield,
-  AlertCircle, Wallet, Tag
+  AlertCircle, Wallet, Tag, Download
 } from "lucide-react";
 
 const TYPE_ICONS = { auto: "🚗", habitation: "🏠", sante: "❤️", voyage: "✈️", vie: "💚" };
@@ -46,6 +47,8 @@ function DetailRow({ icon: Icon, label, value, color = "text-slate-600" }) {
 }
 
 export default function GestionnaireContracts() {
+  const { user: currentUser } = useContext(AuthContext);
+  const isReadOnly = currentUser?.role === "admin";
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -61,6 +64,18 @@ export default function GestionnaireContracts() {
   const [success, setSuccess] = useState("");
 
   useEffect(() => { fetchContracts(); }, []);
+
+  const downloadContractPdf = async (contract) => {
+    try {
+      const res = await API.get(`/pdf/contract/${contract._id}`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contrat-${contract.contractNumber || contract._id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  };
 
   const fetchContracts = async () => {
     try {
@@ -419,8 +434,17 @@ export default function GestionnaireContracts() {
               </div>
             </div>
 
-            {/* Modal footer — actions */}
-            {detailContract.status === "en attente" && (
+            {/* Modal footer — actions (hidden for admin read-only view) */}
+            {/* PDF download — always visible */}
+            <div className="px-5 pt-4 flex justify-end">
+              <button
+                onClick={() => downloadContractPdf(detailContract)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#0f2744] hover:bg-[#153356] text-white text-sm font-semibold rounded-xl transition-all"
+              >
+                <Download className="w-4 h-4" /> Télécharger PDF
+              </button>
+            </div>
+            {detailContract.status === "en attente" && !isReadOnly && (
               <div className="p-5 border-t border-slate-100 flex gap-3">
                 <button
                   onClick={() => handleAccept(detailContract)}
@@ -436,6 +460,13 @@ export default function GestionnaireContracts() {
                   <XCircle className="w-4 h-4" />
                   Refuser
                 </button>
+              </div>
+            )}
+            {isReadOnly && (
+              <div className="p-4 border-t border-slate-100">
+                <p className="text-center text-xs text-slate-400 bg-slate-50 rounded-xl py-2.5 border border-slate-200">
+                  Mode lecture seule — les modifications sont réservées aux gestionnaires
+                </p>
               </div>
             )}
           </div>
